@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import Dataset
 import numpy as np
 import os
@@ -26,6 +27,7 @@ class LensDataset(Dataset):
     def __getitem__(self, idx):
         img = (self.x[idx] - self.min) / self.range # Standardize
         img = np.expand_dims(img, axis=0) # Add channel axis
+        img = torch.from_numpy(img)
         if self.transform:
             img = self.transform(img)
         
@@ -33,3 +35,17 @@ class LensDataset(Dataset):
 
         return img, label
 
+class WrapperDataset(Dataset):
+    def __init__(self, subset, *args, transform=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.subset = subset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.subset)
+
+    def __getitem__(self, idx):
+        img, label = self.subset[idx]
+        if self.transform:
+            img = self.transform(img)
+        return img, label

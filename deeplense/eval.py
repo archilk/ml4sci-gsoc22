@@ -1,9 +1,8 @@
 import torch
-from torch.utils.data import DataLoader, random_split
-from torch.optim import Adam, SGD
+from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
-from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 import argparse
 import os
@@ -58,6 +57,14 @@ if __name__ == '__main__':
 
     loss_fn = CrossEntropyLoss()
 
+    writer = SummaryWriter(os.path.join(args.save_dir, 'tb_logs'))
     metrics = evaluate(model, data_loader, loss_fn, device)
+    writer.add_scalars('loss', {'test': metrics['loss']})
+    writer.add_scalars('accuracy', {'test': metrics['accuracy']})
+    writer.add_scalars('auc', {'test': metrics['auc']})
+    writer.flush()
 
     plot_roc_curve(model, data_loader, os.path.join(args.save_dir, 'test_roc.jpg'), device)
+
+    writer.close()
+

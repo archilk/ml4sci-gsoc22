@@ -4,19 +4,20 @@ from torch.optim import Adam, SGD
 from torch.nn import CrossEntropyLoss
 from torchvision import transforms
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
 import argparse
 import os
 import random
 
-from data import LensDataset
+from data import LensDataset, WrapperDataset
 from constants import *
 from utils import plot_roc_curve, get_best_device
 from networks import BaselineModel
 from eval import evaluate
 
-def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, save_path, device):
+def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, save_path, device, writer, log_interval=10):
     train_accuracy, val_accuracy = [], []
     train_loss, val_loss = [], []
     train_auc, val_auc = [], []
@@ -42,7 +43,7 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, save_path
             temp_accuracy.append(accuracy_fn(logits, y, num_classes=NUM_CLASSES).cpu())
             temp_auc.append(auroc_fn(logits, y, num_classes=NUM_CLASSES).cpu())
 
-            if batch_num % 10 == 0:
+            if batch_num % log_interval == 0:
                 train_loss.append(np.mean(temp_loss))
                 train_accuracy.append(np.mean(temp_accuracy))
                 train_auc.append(np.mean(temp_auc))
@@ -52,6 +53,11 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, save_path
                 val_loss.append(metrics['loss'])
                 val_accuracy.append(metrics['accuracy'])
                 val_auc.append(metrics['auc'])
+
+                writer.add_scalars('loss', {'train': train_loss[-1], 'val': val_loss[-1]}, batch_num)
+                writer.add_scalars('accuracy', {'train': train_accuracy[-1], 'val': val_accuracy[-1]}, batch_num)
+                writer.add_scalars('auc', {'train': train_auc[-1], 'val': val_auc[-1]}, batch_num)
+                writer.flush()
 
                 if metrics['auc'] > best_val_auc:
                     best_val_auc = metrics['auc']
@@ -65,7 +71,8 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, save_path
 
 if __name__ == '__main__':
     # TODO: Add validation for filepath
-    # TODO: Add Tensorboard logs
+    # TODO: Add info logs (which device used, what model used, what hyperparameters used, etc)
+    # TODO: Add more control over hyperparameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-dir', type=str, default='./data/Model_I/memmap/train', help='root directory for dataset')
     parser.add_argument('--epochs', type=int, default=200)
@@ -89,16 +96,18 @@ if __name__ == '__main__':
     else:
         device = args.device
 
+    train_dataset = LensDataset(memmap_path=args.data_dir)
+    # 90%-10% Train-validation split
+    train_size = int(len(train_dataset) * 0.8)
+    val_size = len(train_dataset) - train_size
+    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
+
     augment_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
                                             transforms.RandomVerticalFlip(),
                                             transforms.RandomResizedCrop(150, scale=(0.8, 1)),
                                             transforms.RandomRotation(10)])
-    train_dataset = LensDataset(memmap_path=args.data_dir, transform=augment_transforms)
-    # 90%-10% Train-validation split
-    train_size = int(len(train_dataset) * 0.9)
-    val_size = len(train_dataset) - train_size
-    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    train_dataset = WrapperDataset(train_dataset, transform=augment_transforms)
+    val_dataset = WrapperDataset(val_dataset)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
@@ -115,7 +124,8 @@ if __name__ == '__main__':
     loss_fn = CrossEntropyLoss()
 
     model_save_path = os.path.join(args.save_dir, 'best_model.pt')
-    history = train(model, train_loader, val_loader, loss_fn, optimizer, args.epochs, model_save_path, device)
+    writer = SummaryWriter(os.path.join(args.save_dir, 'tb_logs'))
+    history = train(model, train_loader, val_loader, loss_fn, optimizer, args.epochs, model_save_path, device, writer)
     
     model.load_state_dict(torch.load(model_save_path))
 
@@ -123,4 +133,6 @@ if __name__ == '__main__':
     val_metrics = evaluate(model, val_loader, loss_fn, device)
 
     plot_roc_curve(model, val_loader, os.path.join(args.save_dir, 'val_roc.jpg'), device)
+
+    writer.close()
 
