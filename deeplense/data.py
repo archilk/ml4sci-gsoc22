@@ -1,11 +1,11 @@
-import torch
+from torch.utils.data import Dataset
 import numpy as np
 import os
 import math
 
 from constants import *
 
-class LensDataset(torch.utils.data.Dataset):
+class LensDataset(Dataset):
     def __init__(self, memmap_path, *args, transform=None, **kwargs):
         super().__init__(*args, **kwargs)
         # Hack where shape of memmap is inferred by creating memmap object twice. TODO: Find cleaner way
@@ -24,10 +24,12 @@ class LensDataset(torch.utils.data.Dataset):
         return self.length
     
     def __getitem__(self, idx):
-        batch_x = (self.x[idx] - self.min) / self.range # Standardize
-        batch_x = np.expand_dims(batch_x, axis=1) # Add channel axis
+        img = (self.x[idx] - self.min) / self.range # Standardize
+        img = np.expand_dims(img, axis=0) # Add channel axis
         if self.transform:
-            batch_x = self.transform(batch_x)
-        batch_y = self.y[idx]
-        return batch_x, batch_y
+            img = self.transform(img)
+        
+        label = self.y[idx]
+
+        return img, label
 
