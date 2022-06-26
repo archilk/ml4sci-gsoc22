@@ -2,5 +2,6 @@
 *.ipynb_checkpoints
 *__pycache__
 
-deeplense/data
+deeplense/data/*
+!deeplense/data/.gitkeep
 deeplense/wandb
