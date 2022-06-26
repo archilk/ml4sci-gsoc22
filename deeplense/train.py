@@ -3,136 +3,123 @@ from torch.utils.data import DataLoader, random_split
 from torch.optim import Adam, SGD
 from torch.nn import CrossEntropyLoss
 from torchvision import transforms
-from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
 import argparse
 import os
-import random
+import wandb
 
 from data import LensDataset, WrapperDataset
 from constants import *
-from utils import plot_roc_curve, get_best_device
+from utils import get_best_device, set_seed
 from networks import BaselineModel
 from eval import evaluate
 
-def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, save_path, device, writer, log_interval=10):
-    train_accuracy, val_accuracy = [], []
-    train_loss, val_loss = [], []
-    train_auc, val_auc = [], []
+def train_step(model, images, labels, optimizer, criterion, device='cpu'):
+    images, labels = images.to(device, dtype=torch.float), labels.type(torch.LongTensor).to(device)
+    model.train()
+    optimizer.zero_grad()
+    logits = model(images)
+    loss = criterion(logits, labels)
+    loss.backward()
+    optimizer.step()
+    return loss
 
-    temp_loss, temp_accuracy, temp_auc = [], [], []
 
-    best_val_auc = 0.
-
+def train(model, train_loader, val_loader, criterion, optimizer, epochs, device, log_interval=100):
+    wandb.watch(model, criterion, log='all', log_freq=log_interval)
+    best_val_auroc, best_val_metrics = 0., dict()
     batch_num = 0
     for epoch in range(1, epochs + 1):
         for batch_data in tqdm(train_loader, desc=f'Epoch {epoch}'):
             batch_num += 1
             model.train()
-            X, y = batch_data
-            X, y = X.to(device, dtype=torch.float), y.type(torch.LongTensor).to(device)
-            optimizer.zero_grad()
-            logits = model(X)
-            loss = loss_fn(logits, y)
-            loss.backward()
-            optimizer.step()
-
-            temp_loss.append(loss.detach().cpu())
-            temp_accuracy.append(accuracy_fn(logits, y, num_classes=NUM_CLASSES).cpu())
-            temp_auc.append(auroc_fn(logits, y, num_classes=NUM_CLASSES).cpu())
+            images, labels = batch_data
+            loss = train_step(model, images, labels, optimizer, criterion, device=device)
 
             if batch_num % log_interval == 0:
-                train_loss.append(np.mean(temp_loss))
-                train_accuracy.append(np.mean(temp_accuracy))
-                train_auc.append(np.mean(temp_auc))
-                temp_loss, temp_accuracy = [], []
+                val_metrics = evaluate(model, val_loader, criterion, device=device)
 
-                metrics = evaluate(model, val_loader, loss_fn, device)
-                val_loss.append(metrics['loss'])
-                val_accuracy.append(metrics['accuracy'])
-                val_auc.append(metrics['auc'])
+                # Log in wandb
+                log_dict = {
+                    'epoch': epoch,
+                    'train/loss': loss,
+                    'val/loss': val_metrics['loss'],
+                    'val/accuracy': val_metrics['accuracy'],
+                    'val/micro_auroc': val_metrics['micro_auroc'],
+                    'val/macro_auroc': val_metrics['macro_auroc']
+                }
+                for label in LABELS:
+                    log_dict[f'val/{label}_auroc'] = val_metrics[f'{label}_auroc']
+                wandb.log(log_dict, step=batch_num)
 
-                writer.add_scalars('loss', {'train': train_loss[-1], 'val': val_loss[-1]}, batch_num)
-                writer.add_scalars('accuracy', {'train': train_accuracy[-1], 'val': val_accuracy[-1]}, batch_num)
-                writer.add_scalars('auc', {'train': train_auc[-1], 'val': val_auc[-1]}, batch_num)
-                writer.flush()
+                # Track best val auroc
+                if val_metrics['macro_auroc'] > best_val_auroc:
+                    best_val_auroc = val_metrics['macro_auroc']
+                    wandb.run.summary['best_val_auroc'] = best_val_auroc
+                    best_val_metrics = val_metrics
+                    torch.save(model.state_dict(), os.path.join(wandb.run.dir, 'best_model.pt'))
 
-                if metrics['auc'] > best_val_auc:
-                    best_val_auc = metrics['auc']
-                    torch.save(model.state_dict(), save_path)
-    
-    return {
-        'train': {'loss': train_loss, 'accuracy': train_accuracy, 'auc': train_auc},
-        'val': {'loss': val_loss, 'accuracy': val_accuracy, 'auc': val_auc}
-    }
+        # Sync best model at a lesser frequency (i.e. at the end of each epoch)
+        wandb.save(os.path.join(wandb.run.dir, 'best_model.pt'))
+
+    return best_val_metrics
 
 
 if __name__ == '__main__':
-    # TODO: Add validation for filepath
-    # TODO: Add info logs (which device used, what model used, what hyperparameters used, etc)
-    # TODO: Add more control over hyperparameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data-dir', type=str, default='./data/Model_I/memmap/train', help='root directory for dataset')
+    parser.add_argument('--dataset', choices=['Model_I', 'Model_II', 'Model_III', 'Model_IV'], default='Model_I', help='which data model')
     parser.add_argument('--epochs', type=int, default=200)
-    parser.add_argument('--batch-size', type=int, default=256)
-    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--log_interval', type=int, default=100)
+    parser.add_argument('--batchsize', type=int, default=128)
+    parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--optim', choices=['sgd', 'adam'], default='adam')
+    parser.add_argument('--optimizer', choices=['sgd', 'adam'], default='adam')
     parser.add_argument('--model', type=str)
-    parser.add_argument('--save-dir', type=str, default='./checkpoints/baseline')
     parser.add_argument('--seed', type=int)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
-    args = parser.parse_args()
+    run_config = parser.parse_args()
 
-    if args.seed:
-        torch.manual_seed(args.seed)
-        np.random.seed(args.seed)
-        random.seed(args.seed)
+    with wandb.init(entity='_archil', config=run_config, group=f'{run_config.dataset}', job_type='train'):
+        if run_config.seed:
+            set_seed(run_config.seed)
 
-    if args.device == 'best':
-        device = get_best_device()
-    else:
-        device = args.device
+        if run_config.device == 'best':
+            device = get_best_device()
+        else:
+            device = run_config.device
 
-    train_dataset = LensDataset(memmap_path=args.data_dir)
-    # 90%-10% Train-validation split
-    train_size = int(len(train_dataset) * 0.8)
-    val_size = len(train_dataset) - train_size
-    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
+        datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'train')
+        train_dataset = LensDataset(memmap_path=datapath)
+        # 90%-10% Train-validation split
+        train_size = int(len(train_dataset) * 0.8)
+        val_size = len(train_dataset) - train_size
+        train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
-    augment_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                            transforms.RandomVerticalFlip(),
-                                            transforms.RandomResizedCrop(150, scale=(0.8, 1)),
-                                            transforms.RandomRotation(10)])
-    train_dataset = WrapperDataset(train_dataset, transform=augment_transforms)
-    val_dataset = WrapperDataset(val_dataset)
+        augment_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
+                                                transforms.RandomVerticalFlip(),
+                                                transforms.RandomResizedCrop(150, scale=(0.8, 1)),
+                                                transforms.RandomRotation(10)])
+        train_dataset = WrapperDataset(train_dataset, transform=augment_transforms)
+        val_dataset = WrapperDataset(val_dataset)
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+        train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
 
-    model = BaselineModel(dropout_rate=parser.dropout).to(device)
+        model = BaselineModel(dropout_rate=run_config.dropout).to(device)
 
-    if args.optim == 'adam':
-        optimizer = Adam(model.parameters(), lr=args.lr)
-    elif args.optim == 'sgd':
-        optimizer = SGD(model.parameters(), lr=args.lr)
-    else:
-        optimizer = None
-    
-    loss_fn = CrossEntropyLoss()
+        if run_config.optimizer == 'adam':
+            optimizer = Adam(model.parameters(), lr=run_config.lr)
+        else:
+            optimizer = SGD(model.parameters(), lr=run_config.lr)
+        
+        criterion = CrossEntropyLoss()
 
-    model_save_path = os.path.join(args.save_dir, 'best_model.pt')
-    writer = SummaryWriter(os.path.join(args.save_dir, 'tb_logs'))
-    history = train(model, train_loader, val_loader, loss_fn, optimizer, args.epochs, model_save_path, device, writer)
-    
-    model.load_state_dict(torch.load(model_save_path))
+        best_val_metrics = train(model, train_loader, val_loader, criterion, optimizer, run_config.epochs,
+                                 device, run_config.log_interval)
 
-    train_metrics = evaluate(model, train_loader, loss_fn, device)
-    val_metrics = evaluate(model, val_loader, loss_fn, device)
-
-    plot_roc_curve(model, val_loader, os.path.join(args.save_dir, 'val_roc.jpg'), device)
-
-    writer.close()
-
+        wandb.log({
+            'roc': wandb.plot.roc_curve(best_val_metrics['ground_truth'],
+                                        torch.nn.functional.softmax(best_val_metrics['logits']),
+                                        labels=LABELS)
+        })

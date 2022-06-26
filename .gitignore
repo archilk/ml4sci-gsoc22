@@ -3,3 +3,4 @@
 *__pycache__
 
 deeplense/data
+deeplense/wandb
