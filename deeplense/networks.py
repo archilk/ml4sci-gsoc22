@@ -1,6 +1,7 @@
 import torch
-from torch.nn import Conv2d, Linear, Dropout, BatchNorm2d, MaxPool2d, Flatten, ReLU, Softmax
-import pdb
+from torch.nn import Conv2d, Linear, Dropout, BatchNorm2d, MaxPool2d, Flatten, ReLU, Softmax, Sequential, LayerNorm
+from constants import NUM_CLASSES
+from layers import Patches, PatchEncoder, Transformer, FFN
 
 class BaselineModel(torch.nn.Module):
     def __init__(self, dropout_rate=0.5, *args, **kwargs):
@@ -37,7 +38,7 @@ class BaselineModel(torch.nn.Module):
         self.linear1 = Linear(128*14*14, 256)
         self.linear2 = Linear(256, 32)
 
-        self.classifier = Linear(32, 3)
+        self.classifier = Linear(32, NUM_CLASSES)
 
         self.pool = MaxPool2d(2)
         self.relu = ReLU()
@@ -68,3 +69,52 @@ class BaselineModel(torch.nn.Module):
         logits = self(x)
         probs = self.softmax(logits)
         return torch.argmax(probs, dim=-1)
+
+class ViTClassifier(torch.nn.Module):
+    '''
+    ViT Classifier Model
+    Input shape: (batch_size, image_size, image_size, num_channels)
+    Output shape: (batch_size, 1)
+    '''
+    def __init__(self, patch_size, num_patches, projection_dim, mlp_head_units,
+                 num_transformer_layers, transformer_units, num_heads,
+                 dropout_rate=0.5, transformer_dropout_rate=0.1, epsilon=1e-6,
+                 **kwargs):
+        super().__init__(**kwargs)
+
+        self.patch = Patches(patch_size)
+        self.patch_encoder = PatchEncoder(num_patches, patch_size * patch_size, projection_dim)
+        self.transformers = Sequential(
+            *(Transformer(num_patches, transformer_units, num_heads, projection_dim,
+                         epsilon=epsilon, dropout_rate=transformer_dropout_rate)
+            for _ in range(num_transformer_layers))
+        )
+        self.norm = LayerNorm(projection_dim, eps=epsilon)
+        self.dropout_rate = dropout_rate
+        self.mlp_head = FFN(num_patches * projection_dim, mlp_head_units, dropout_rate)
+        self.classify = Linear(mlp_head_units[-1], NUM_CLASSES)
+        self.softmax = Softmax(dim=1)
+  
+    def forward(self, image):
+        # Patch encoding
+        patches = self.patch(image)
+        patches = self.patch_encoder(patches)
+
+        # Transformer blocks
+        patches = self.transformers(patches)
+
+        # FeedForward Network
+        representation = self.norm(patches)
+        representation = Flatten()(representation)
+        representation = Dropout(self.dropout_rate)(representation)
+        representation = self.mlp_head(representation)
+
+        logits = self.classify(representation)
+        return logits
+
+    def predict(self, x):
+        logits = self(x)
+        probs = self.softmax(logits)
+        return torch.argmax(probs, dim=-1)
+
+

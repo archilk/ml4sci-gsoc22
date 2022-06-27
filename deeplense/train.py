@@ -12,7 +12,7 @@ import wandb
 from data import LensDataset, WrapperDataset
 from constants import *
 from utils import get_best_device, set_seed
-from networks import BaselineModel
+from networks import BaselineModel, ViTClassifier
 from eval import evaluate
 
 def train_step(model, images, labels, optimizer, criterion, device='cpu'):
@@ -68,16 +68,28 @@ def train(model, train_loader, val_loader, criterion, optimizer, epochs, device,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    # Fixed params
     parser.add_argument('--dataset', choices=['Model_I', 'Model_II', 'Model_III', 'Model_IV'], default='Model_I', help='which data model')
     parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--log_interval', type=int, default=100)
+    parser.add_argument('--model', choices=['baseline', 'vit'], default='vit')
+    parser.add_argument('--seed', type=int)
+    parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
+
+    # Common hyperparameters
     parser.add_argument('--batchsize', type=int, default=128)
     parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--optimizer', choices=['sgd', 'adam'], default='adam')
-    parser.add_argument('--model', type=str)
-    parser.add_argument('--seed', type=int)
-    parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
+
+    # ViT hyperparameters
+    parser.add_argument('--patch_size', type=int, default=15)
+    parser.add_argument('--projection_dim', type=int, default=64)
+    parser.add_argument('--num_transformer_layers', type=int, default=8)
+    parser.add_argument('--num_heads', type=int, default=4)
+    parser.add_argument('--transformer_dropout', type=float, default=0.1)
+    parser.add_argument('--epsilon', type=float, default=1e-6)
+
     run_config = parser.parse_args()
 
     with wandb.init(entity='_archil', config=run_config, group=f'{run_config.dataset}', job_type='train'):
@@ -106,7 +118,19 @@ if __name__ == '__main__':
         train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
 
-        model = BaselineModel(dropout_rate=run_config.dropout).to(device)
+        if run_config.model == 'baseline':
+            model = BaselineModel(dropout_rate=run_config.dropout).to(device)
+        elif run_config.model == 'vit':
+            model = ViTClassifier(run_config.patch_size,
+                                  (IMAGE_SIZE[0] // run_config.patch_size) ** 2,
+                                  run_config.projection_dim,
+                                  [2048, 1024],
+                                  run_config.num_transformer_layers,
+                                  [run_config.projection_dim * 2, run_config.projection_dim],
+                                  run_config.num_heads,
+                                  run_config.dropout, run_config.transformer_dropout, run_config.epsilon).to(device)
+        else:
+            model = None
 
         if run_config.optimizer == 'adam':
             optimizer = Adam(model.parameters(), lr=run_config.lr)
