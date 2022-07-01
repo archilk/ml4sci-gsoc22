@@ -43,6 +43,7 @@ def train(model, train_loader, val_loader, criterion, optimizer, epochs, device,
                 # Log in wandb
                 log_dict = {
                     'epoch': epoch,
+                    'batch_num': batch_num,
                     'train/loss': loss,
                     'val/loss': val_metrics['loss'],
                     'val/accuracy': val_metrics['accuracy'],
@@ -52,13 +53,23 @@ def train(model, train_loader, val_loader, criterion, optimizer, epochs, device,
                 for label in LABELS:
                     log_dict[f'val/{label}_auroc'] = val_metrics[f'{label}_auroc']
                 wandb.log(log_dict, step=batch_num)
+                wandb.log({
+                    'roc': wandb.plot.roc_curve(val_metrics['ground_truth'],
+                                                torch.nn.functional.softmax(val_metrics['logits']),
+                                                labels=LABELS)
+                })
 
                 # Track best val auroc
                 if val_metrics['macro_auroc'] > best_val_auroc:
                     best_val_auroc = val_metrics['macro_auroc']
-                    wandb.run.summary['best_val_auroc'] = best_val_auroc
+                    wandb.run.summary['best_val_macro_auroc'] = best_val_auroc
+                    wandb.run.summary['best_epoch'] = epoch
+                    wandb.run.summary['best_batch_num'] = batch_num
+                    for label in LABELS:
+                        wandb.run.summary[f'best_val_{label}_auroc'] = val_metrics[f'{label}_auroc']
                     best_val_metrics = val_metrics
                     torch.save(model.state_dict(), os.path.join(wandb.run.dir, 'best_model.pt'))
+                    import pdb;pdb.set_trace()
 
         # Sync best model at a lesser frequency (i.e. at the end of each epoch)
         wandb.save(os.path.join(wandb.run.dir, 'best_model.pt'))
@@ -142,8 +153,3 @@ if __name__ == '__main__':
         best_val_metrics = train(model, train_loader, val_loader, criterion, optimizer, run_config.epochs,
                                  device, run_config.log_interval)
 
-        wandb.log({
-            'roc': wandb.plot.roc_curve(best_val_metrics['ground_truth'],
-                                        torch.nn.functional.softmax(best_val_metrics['logits']),
-                                        labels=LABELS)
-        })
