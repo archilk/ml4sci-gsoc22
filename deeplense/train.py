@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader, random_split
 from torch.optim import Adam, SGD
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.nn import CrossEntropyLoss
 from torchvision import transforms
 from tqdm import tqdm
@@ -15,7 +16,7 @@ from utils import get_best_device, set_seed
 from networks import BaselineModel, ViTClassifier
 from eval import evaluate
 
-def train_step(model, images, labels, optimizer, criterion, device='cpu'):
+def train_step(model, images, labels, optimizer, scheduler, criterion, device='cpu'):
     images, labels = images.to(device, dtype=torch.float), labels.type(torch.LongTensor).to(device)
     model.train()
     optimizer.zero_grad()
@@ -23,10 +24,12 @@ def train_step(model, images, labels, optimizer, criterion, device='cpu'):
     loss = criterion(logits, labels)
     loss.backward()
     optimizer.step()
+    if scheduler is not None:
+        scheduler.step(loss)
     return loss
 
 
-def train(model, train_loader, val_loader, criterion, optimizer, epochs, device, log_interval=100):
+def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epochs, device, log_interval=100):
     wandb.watch(model, criterion, log='all', log_freq=log_interval)
     best_val_auroc, best_val_metrics = 0., dict()
     batch_num = 0
@@ -35,7 +38,7 @@ def train(model, train_loader, val_loader, criterion, optimizer, epochs, device,
             batch_num += 1
             model.train()
             images, labels = batch_data
-            loss = train_step(model, images, labels, optimizer, criterion, device=device)
+            loss = train_step(model, images, labels, optimizer, scheduler, criterion, device=device)
 
             if batch_num % log_interval == 0:
                 val_metrics = evaluate(model, val_loader, criterion, device=device)
@@ -69,7 +72,6 @@ def train(model, train_loader, val_loader, criterion, optimizer, epochs, device,
                         wandb.run.summary[f'best_val_{label}_auroc'] = val_metrics[f'{label}_auroc']
                     best_val_metrics = val_metrics
                     torch.save(model.state_dict(), os.path.join(wandb.run.dir, 'best_model.pt'))
-                    import pdb;pdb.set_trace()
 
         # Sync best model at a lesser frequency (i.e. at the end of each epoch)
         wandb.save(os.path.join(wandb.run.dir, 'best_model.pt'))
@@ -92,6 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--optimizer', choices=['sgd', 'adam'], default='adam')
+    parser.add_argument('--decay_lr', type=int, default=0)
 
     # ViT hyperparameters
     parser.add_argument('--patch_size', type=int, default=15)
@@ -150,6 +153,11 @@ if __name__ == '__main__':
         
         criterion = CrossEntropyLoss()
 
-        best_val_metrics = train(model, train_loader, val_loader, criterion, optimizer, run_config.epochs,
+        if run_config.decay_lr == 1:
+            scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=1, eta_min=1e-6, verbose=True)
+        else:
+            scheduler = None
+
+        best_val_metrics = train(model, train_loader, val_loader, criterion, optimizer, scheduler, run_config.epochs,
                                  device, run_config.log_interval)
 
