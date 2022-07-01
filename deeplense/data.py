@@ -11,7 +11,7 @@ class LensDataset(Dataset):
         super().__init__(*args, **kwargs)
         # Hack where shape of memmap is inferred by creating memmap object twice. TODO: Find cleaner way
         self.x = np.memmap(os.path.join(memmap_path, 'images.npy'), dtype='int32', mode='r')
-        self.length = self.x.shape[0] // math.prod(IMAGE_SIZE)
+        self.length = self.x.shape[0] // (IMAGE_SIZE[0] * IMAGE_SIZE[1])
         self.x = np.memmap(os.path.join(memmap_path, 'images.npy'), dtype='int32', mode='r',
                            shape=(self.length,)+IMAGE_SIZE)
         self.y = np.load(os.path.join(memmap_path, 'labels.npy'))
