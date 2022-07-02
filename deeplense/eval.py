@@ -47,43 +47,49 @@ def evaluate(model, data_loader, loss_fn, device):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', choices=['Model_I', 'Model_II', 'Model_III', 'Model_IV'], default='I', help='which data model')
-    parser.add_argument('--epochs', type=int, default=200)
-    parser.add_argument('--batchsize', type=int, default=128)
-    parser.add_argument('--lr', type=float, default=5e-4)
-    parser.add_argument('--optim', choices=['sgd', 'adam'], default='adam')
-    parser.add_argument('--model', type=str)
-    parser.add_argument('--runname', type=str, help='Name of run on wandb')
-    parser.add_argument('--seed', type=int)
+    parser.add_argument('--runid', type=str, help='ID of train run')
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
     run_config = parser.parse_args()
 
-    with wandb.init(entity='_archil', config=run_config, group=f'{run_config.dataset}', job_type='test', id=wandb.util.generate_id()):
+    with wandb.init(entity='_archil', id=run_config.runid, resume='must'):
         if run_config.device == 'best':
             device = get_best_device()
         else:
             device = run_config.device
 
-        datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'test')
+        datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
         dataset = LensDataset(memmap_path=datapath)
-        data_loader = DataLoader(dataset, batch_size=run_config.batch_size, shuffle=False)
+        data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
-        model = BaselineModel().to(device)
-        weights_file = wandb.restore('best_model.pt', run_path=f'_archil/{run_config.model}/{run_config.runname}')
+        if wandb.config.model == 'baseline':
+            model = BaselineModel().to(device)
+        elif wandb.config.model == 'vit': 
+            model = ViTClassifier(wandb.config.patch_size,
+                                  (IMAGE_SIZE[0] // wandb.config.patch_size) ** 2,
+                                  wandb.config.projection_dim,
+                                  [2048, 1024],
+                                  wandb.config.num_transformer_layers,
+                                  [wandb.config.projection_dim * 2, wandb.config.projection_dim],
+                                  wandb.config.num_heads,
+                                  wandb.config.dropout, wandb.config.transformer_dropout, wandb.config.epsilon).to(device)
+        else:
+            model = None
+        weights_file = wandb.restore('best_model.pt')
         model.load_state_dict(torch.load(os.path.join(wandb.run.dir, 'best_model.pt')))
 
         criterion = CrossEntropyLoss()
 
         metrics = evaluate(model, data_loader, criterion, device=device)
 
-        log_dict = {'test/loss': metrics['loss'], 'test/accuracy': metrics['accuracy'],
-                   'test/micro_auroc': metrics['micro_auroc'], 'test/macro_auroc': metrics['macro_auroc']}
+        wandb.run.summary['test_loss'] = metrics['loss']
+        wandb.run.summary['test_accuracy'] = metrics['accuracy']
+        wandb.run.summary['test_micro_auroc'] = metrics['micro_auroc']
+        wandb.run.summary['test_macro_auroc'] = metrics['macro_auroc']
         for label in LABELS:
-            log_dict[f'test/{label}_auroc'] = metrics[f'{label}_auroc']
-        wandb.log(log_dict)
+            wandb.run.summary[f'test_{label}_auroc'] = metrics[f'{label}_auroc']
 
         wandb.log({
-            'roc': wandb.plot.roc_curve(metrics['ground_truth'],
+            'test_roc': wandb.plot.roc_curve(metrics['ground_truth'],
                                         torch.nn.functional.softmax(metrics['logits']),
                                         labels=LABELS)
         })

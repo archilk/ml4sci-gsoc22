@@ -65,6 +65,7 @@ def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epoc
                 # Track best val auroc
                 if val_metrics['macro_auroc'] > best_val_auroc:
                     best_val_auroc = val_metrics['macro_auroc']
+                    wandb.run.summary['best_val_micro_auroc'] = val_metrics['micro_auroc']
                     wandb.run.summary['best_val_macro_auroc'] = best_val_auroc
                     wandb.run.summary['best_epoch'] = epoch
                     wandb.run.summary['best_batch_num'] = batch_num
