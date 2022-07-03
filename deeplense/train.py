@@ -89,6 +89,8 @@ if __name__ == '__main__':
     parser.add_argument('--model', choices=['baseline', 'vit'], default='vit')
     parser.add_argument('--seed', type=int)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
+    parser.add_argument('--random_resize_scale', type=float, default=0.7)
+    parser.add_argument('--random_rotation', type=float, default=30)
 
     # Common hyperparameters
     parser.add_argument('--batchsize', type=int, default=128)
@@ -123,10 +125,13 @@ if __name__ == '__main__':
         val_size = len(train_dataset) - train_size
         train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
-        augment_transforms = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                                transforms.RandomVerticalFlip(),
-                                                transforms.RandomResizedCrop(150, scale=(0.8, 1)),
-                                                transforms.RandomRotation(10)])
+        augment_transforms = [transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()]
+        if run_config.random_resize_scale < 1: # 1 is when the random crop is the whole image
+            augment_transforms.append(transforms.RandomResizedCrop(150, scale=(run_config.random_resize_scale, 1)))
+        if run_config.random_rotation > 0:
+            augment_transforms.append(transforms.RandomRotation(run_config.random_rotation))
+        augment_transforms = transforms.Compose(augment_transforms)
+
         train_dataset = WrapperDataset(train_dataset, transform=augment_transforms)
         val_dataset = WrapperDataset(val_dataset)
 
