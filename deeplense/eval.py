@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
+from vit_pytorch import ViT
 from torchvision import transforms
 import timm
 import wandb
@@ -66,15 +67,14 @@ if __name__ == '__main__':
 
         if wandb.config.model == 'baseline':
             model = BaselineModel().to(device)
-        elif wandb.config.model == 'vit': 
-            model = ViTClassifier(wandb.config.patch_size,
-                                  (IMAGE_SIZE[0] // wandb.config.patch_size) ** 2,
-                                  wandb.config.projection_dim,
-                                  [2048, 1024],
-                                  wandb.config.num_transformer_layers,
-                                  [wandb.config.projection_dim * 2, wandb.config.projection_dim],
-                                  wandb.config.num_heads,
-                                  wandb.config.dropout, wandb.config.transformer_dropout, wandb.config.epsilon).to(device)
+        elif wandb.config.model == 'vit':
+            model = ViT(image_size=IMAGE_SIZE[0], num_classes=NUM_CLASSES, channels=1,
+                        patch_size=wandb.config.patch_size,
+                        dim=wandb.config.projection_dim,
+                        depth=wandb.config.num_transformer_layers,
+                        heads=wandb.config.num_heads,
+                        mlp_dim=wandb.config.mlp_dim,
+                        dropout=wandb.config.dropout, emb_dropout=wandb.config.transformer_dropout).to(device)
         elif wandb.config.model == 'vit_pretrained':
             model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
         else:

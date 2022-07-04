@@ -4,6 +4,7 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.nn import CrossEntropyLoss
 from torchvision import transforms
+from vit_pytorch import ViT
 from tqdm import tqdm
 import numpy as np
 import argparse
@@ -101,12 +102,12 @@ if __name__ == '__main__':
     parser.add_argument('--decay_lr', type=int, default=0)
 
     # ViT hyperparameters
-    parser.add_argument('--patch_size', type=int, default=15)
-    parser.add_argument('--projection_dim', type=int, default=64)
+    parser.add_argument('--patch_size', type=int, default=30)
+    parser.add_argument('--projection_dim', type=int, default=1024)
     parser.add_argument('--num_transformer_layers', type=int, default=8)
-    parser.add_argument('--num_heads', type=int, default=4)
+    parser.add_argument('--num_heads', type=int, default=16)
+    parser.add_argument('--mlp_dim', type=int, default=2048)
     parser.add_argument('--transformer_dropout', type=float, default=0.1)
-    parser.add_argument('--epsilon', type=float, default=1e-6)
 
     run_config = parser.parse_args()
 
@@ -146,14 +147,13 @@ if __name__ == '__main__':
         if run_config.model == 'baseline':
             model = BaselineModel(dropout_rate=run_config.dropout).to(device)
         elif run_config.model == 'vit':
-            model =  ViTClassifier(run_config.patch_size,
-                                   (IMAGE_SIZE[0] // run_config.patch_size) ** 2,
-                                   run_config.projection_dim,
-                                   [2048, 1024],
-                                   run_config.transformer_layers,
-                                   [run_config.projection_dim * 2, run_config.projection_dim],
-                                   run_config.num_heads,
-                                   run_config.dropout, run_config.transformer_dropout, run_config.epsilon).to(device)
+            model = ViT(image_size=IMAGE_SIZE[0], num_classes=NUM_CLASSES, channels=1,
+                        patch_size=run_config.patch_size,
+                        dim=run_config.projection_dim,
+                        depth=run_config.num_transformer_layers,
+                        heads=run_config.num_heads,
+                        mlp_dim=run_config.mlp_dim,
+                        dropout=run_config.dropout, emb_dropout=run_config.transformer_dropout).to(device)
         elif run_config.model == 'vit_pretrained':
             model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
         else:
