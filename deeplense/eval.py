@@ -2,6 +2,8 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
+from torchvision import transforms
+import timm
 import wandb
 import numpy as np
 import argparse
@@ -10,7 +12,7 @@ import os
 from data import LensDataset
 from constants import *
 from utils import get_best_device
-from networks import BaselineModel
+from networks import BaselineModel, ViTClassifier
 
 @torch.no_grad()
 def evaluate(model, data_loader, loss_fn, device):
@@ -58,7 +60,8 @@ if __name__ == '__main__':
             device = run_config.device
 
         datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
-        dataset = LensDataset(memmap_path=datapath)
+        padding_transform = transforms.Compose([transforms.Pad(37)]) if wandb.config.model == 'vit_pretrained' else None
+        dataset = LensDataset(memmap_path=datapath, transform=padding_transform)
         data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
         if wandb.config.model == 'baseline':
@@ -72,6 +75,8 @@ if __name__ == '__main__':
                                   [wandb.config.projection_dim * 2, wandb.config.projection_dim],
                                   wandb.config.num_heads,
                                   wandb.config.dropout, wandb.config.transformer_dropout, wandb.config.epsilon).to(device)
+        elif wandb.config.model == 'vit_pretrained':
+            model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
         else:
             model = None
         weights_file = wandb.restore('best_model.pt')

@@ -9,6 +9,7 @@ import numpy as np
 import argparse
 import os
 import wandb
+import timm
 
 from data import LensDataset, WrapperDataset
 from constants import *
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', choices=['Model_I', 'Model_II', 'Model_III', 'Model_IV'], default='Model_I', help='which data model')
     parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--log_interval', type=int, default=100)
-    parser.add_argument('--model', choices=['baseline', 'vit'], default='vit')
+    parser.add_argument('--model', choices=['baseline', 'vit', 'vit_pretrained'], default='vit')
     parser.add_argument('--seed', type=int)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
     parser.add_argument('--random_resize_scale', type=float, default=0.7)
@@ -130,10 +131,14 @@ if __name__ == '__main__':
             augment_transforms.append(transforms.RandomResizedCrop(150, scale=(run_config.random_resize_scale, 1)))
         if run_config.random_rotation > 0:
             augment_transforms.append(transforms.RandomRotation(run_config.random_rotation))
+        padding_transform = [transforms.Pad(37)] if run_config.model == 'vit_pretrained' else None
+        if padding_transform is not None:
+            augment_transforms.extend(padding_transform) # 150x150 to 224x224 for ViT
+            padding_transform = transforms.Compose(padding_transform)
         augment_transforms = transforms.Compose(augment_transforms)
 
         train_dataset = WrapperDataset(train_dataset, transform=augment_transforms)
-        val_dataset = WrapperDataset(val_dataset)
+        val_dataset = WrapperDataset(val_dataset, transform=padding_transform)
 
         train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
@@ -141,14 +146,16 @@ if __name__ == '__main__':
         if run_config.model == 'baseline':
             model = BaselineModel(dropout_rate=run_config.dropout).to(device)
         elif run_config.model == 'vit':
-            model = ViTClassifier(run_config.patch_size,
-                                  (IMAGE_SIZE[0] // run_config.patch_size) ** 2,
-                                  run_config.projection_dim,
-                                  [2048, 1024],
-                                  run_config.num_transformer_layers,
-                                  [run_config.projection_dim * 2, run_config.projection_dim],
-                                  run_config.num_heads,
-                                  run_config.dropout, run_config.transformer_dropout, run_config.epsilon).to(device)
+            model =  ViTClassifier(run_config.patch_size,
+                                   (IMAGE_SIZE[0] // run_config.patch_size) ** 2,
+                                   run_config.projection_dim,
+                                   [2048, 1024],
+                                   run_config.transformer_layers,
+                                   [run_config.projection_dim * 2, run_config.projection_dim],
+                                   run_config.num_heads,
+                                   run_config.dropout, run_config.transformer_dropout, run_config.epsilon).to(device)
+        elif run_config.model == 'vit_pretrained':
+            model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
         else:
             model = None
 
