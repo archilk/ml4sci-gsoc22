@@ -15,7 +15,7 @@ import timm
 from data import LensDataset, WrapperDataset
 from constants import *
 from utils import get_best_device, set_seed
-from networks import BaselineModel, ViTClassifier
+from networks import BaselineModel, ViTClassifier, ViTPretrainedClassifier
 from eval import evaluate
 
 def train_step(model, images, labels, optimizer, scheduler, criterion, device='cpu'):
@@ -155,7 +155,8 @@ if __name__ == '__main__':
                         mlp_dim=run_config.mlp_dim,
                         dropout=run_config.dropout, emb_dropout=run_config.transformer_dropout).to(device)
         elif run_config.model == 'vit_pretrained':
-            model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
+            #model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
+            model = ViTPretrainedClassifier(dropout_rate=run_config.dropout).to(device)
         else:
             model = None
 

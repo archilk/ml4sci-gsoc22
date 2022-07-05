@@ -1,7 +1,8 @@
 import torch
-from torch.nn import Conv2d, Linear, Dropout, BatchNorm2d, MaxPool2d, Flatten, ReLU, Softmax, Sequential, LayerNorm
+from torch.nn import Conv2d, Linear, Dropout, BatchNorm2d, MaxPool2d, Flatten, ReLU, Softmax, Sequential, LayerNorm, PReLU, BatchNorm1d
 from constants import NUM_CLASSES
 from layers import Patches, PatchEncoder, Transformer, FFN
+import timm
 
 class BaselineModel(torch.nn.Module):
     def __init__(self, dropout_rate=0.5, *args, **kwargs):
@@ -69,6 +70,41 @@ class BaselineModel(torch.nn.Module):
         logits = self(x)
         probs = self.softmax(logits)
         return torch.argmax(probs, dim=-1)
+
+
+class ViTPretrainedClassifier(torch.nn.Module):
+    def __init__(self, *args, dropout_rate=0.5, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES)
+        
+        for param in self.model.parameters():
+            param.requires_grad = True            
+        
+        self.fc = Sequential(
+                            Linear(197 * 768, 1024),
+                            PReLU(),
+                            BatchNorm1d(1024),
+                            Dropout(p=dropout_rate),
+                            
+                            Linear(1024, 512),
+                            BatchNorm1d(512),
+                            PReLU(),
+                            Dropout(p=dropout_rate),
+    
+                            Linear(512, 128),
+                            PReLU(),
+                            BatchNorm1d(128),
+                            Dropout(p=0.3),
+                            
+                            Linear(128, 3)
+                            )
+        
+    def forward(self, x):
+        x = self.model.forward_features(x)
+        x = x.view(-1, 197 * 768)
+        x = self.fc(x)
+        return x
+
 
 class ViTClassifier(torch.nn.Module):
     '''
