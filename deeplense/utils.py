@@ -8,14 +8,15 @@ import os
 from constants import *
 
 def get_best_device():
-    device = 'cpu'
-    if torch.has_mps:
-        device = 'mps'
-    if torch.cuda.is_available():
-        device = 'cuda'
-    if os.environ['COLAB_TPU_ADDR']:
+    if 'COLAB_TPU_ADDR' in os.environ:
         import torch_xla.core.xla_model as xm
         device = xm.xla_device()
+    elif torch.cuda.is_available():
+        device = 'cuda'
+    elif torch.has_mps:
+        device = 'mps'
+    else:
+        device = 'cpu'
     return device
 
 
