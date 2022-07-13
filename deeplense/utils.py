@@ -3,6 +3,7 @@ from torch.nn import Softmax
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import os
 
 from constants import *
 
@@ -12,6 +13,9 @@ def get_best_device():
         device = 'mps'
     if torch.cuda.is_available():
         device = 'cuda'
+    if os.environ['COLAB_TPU_ADDR']:
+        import torch_xla.core.xla_model as xm
+        device = xm.xla_device()
     return device
 
 

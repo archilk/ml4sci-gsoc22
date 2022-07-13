@@ -90,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_interval', type=int, default=100)
     parser.add_argument('--model', choices=['baseline', 'vit', 'vit_pretrained'], default='vit')
     parser.add_argument('--seed', type=int)
-    parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
+    parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'tpu', 'best'], default='best')
     parser.add_argument('--random_resize_scale', type=float, default=0.7)
     parser.add_argument('--random_rotation', type=float, default=30)
 
@@ -120,6 +120,9 @@ if __name__ == '__main__':
 
         if run_config.device == 'best':
             device = get_best_device()
+        elif run_config.device == 'tpu':
+            import torch_xla.core.xla_model as xm
+            device = xm.xla_device()
         else:
             device = run_config.device
 
