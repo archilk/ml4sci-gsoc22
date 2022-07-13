@@ -73,12 +73,12 @@ class BaselineModel(torch.nn.Module):
 
 
 class ViTPretrainedClassifier(torch.nn.Module):
-    def __init__(self, *args, dropout_rate=0.5, **kwargs):
+    def __init__(self, *args, dropout_rate=0.5, tune=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES)
         
         for param in self.model.parameters():
-            param.requires_grad = True            
+            param.requires_grad = tune
         
         self.fc = Sequential(
                             Linear(197 * 768, 1024),

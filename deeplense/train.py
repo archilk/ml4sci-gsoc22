@@ -108,8 +108,11 @@ if __name__ == '__main__':
     parser.add_argument('--num_heads', type=int, default=16)
     parser.add_argument('--mlp_dim', type=int, default=2048)
     parser.add_argument('--transformer_dropout', type=float, default=0.1)
+    parser.add_argument('--tune', type=int, choices=[0, 1], default=1, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
 
     run_config = parser.parse_args()
+
+    tune = True if run_config.tune == 1 else False
 
     with wandb.init(entity='_archil', config=run_config, group=f'{run_config.dataset}', job_type='train'):
         if run_config.seed:
@@ -155,8 +158,7 @@ if __name__ == '__main__':
                         mlp_dim=run_config.mlp_dim,
                         dropout=run_config.dropout, emb_dropout=run_config.transformer_dropout).to(device)
         elif run_config.model == 'vit_pretrained':
-            #model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
-            model = ViTPretrainedClassifier(dropout_rate=run_config.dropout).to(device)
+            model = ViTPretrainedClassifier(dropout_rate=run_config.dropout, tune=tune).to(device)
         else:
             model = None
 
