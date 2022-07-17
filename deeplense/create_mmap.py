@@ -10,6 +10,7 @@ if __name__ == '__main__':
     parser.add_argument('--data-dir', default='./data/Model_I', help='root directory for dataset')
     parser.add_argument('--out-dir', default='/data/Model_I/memmap', help='directory to store memmap')
     parser.add_argument('--mode', default='train')
+    parser.add_argument('--image_size', type=int, default=150, help='Input image size')
     opt = parser.parse_args()
     if opt.mode not in ['train', 'test']:
         raise(ValueError('Mode should be either train or test'))
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     
     image_map = np.memmap(os.path.join(opt.out_dir, opt.mode, 'images.npy'),
                           dtype='int32', mode='w+',
-                          shape=(train_size,) + IMAGE_SIZE)
+                          shape=(train_size, opt.image_size, opt.image_size))
     labels = np.zeros(train_size, dtype='int32')
 
     idx = 0

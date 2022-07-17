@@ -59,14 +59,21 @@ if __name__ == '__main__':
             device = get_best_device()
         else:
             device = run_config.device
+        
+        if wandb.config.dataset == 'Model_I':
+            IMAGE_SIZE = 150
+        elif wandb.config.dataset == 'Model_II' or wandb.config.dataset == 'Model_III':
+            IMAGE_SIZE = 64
+        else:
+            IMAGE_SIZE = None
 
         datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
         padding_transform = transforms.Compose([transforms.Pad(37)]) if wandb.config.model == 'vit_pretrained' else None
-        dataset = LensDataset(memmap_path=datapath, transform=padding_transform)
+        dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath, transform=padding_transform)
         data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
         if wandb.config.model == 'baseline':
-            model = BaselineModel().to(device)
+            model = BaselineModel(image_size=IMAGE_SIZE).to(device)
         elif wandb.config.model == 'vit':
             model = ViT(image_size=IMAGE_SIZE[0], num_classes=NUM_CLASSES, channels=1,
                         patch_size=wandb.config.patch_size,

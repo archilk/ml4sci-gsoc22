@@ -125,9 +125,16 @@ if __name__ == '__main__':
             device = xm.xla_device()
         else:
             device = run_config.device
+        
+        if run_config.dataset == 'Model_I':
+            IMAGE_SIZE = 150
+        elif run_config.dataset == 'Model_II' or run_config.dataset == 'Model_III':
+            IMAGE_SIZE = 64
+        else:
+            IMAGE_SIZE = None
 
         datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'train')
-        train_dataset = LensDataset(memmap_path=datapath)
+        train_dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath)
         # 90%-10% Train-validation split
         train_size = int(len(train_dataset) * 0.8)
         val_size = len(train_dataset) - train_size
@@ -151,9 +158,9 @@ if __name__ == '__main__':
         val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
 
         if run_config.model == 'baseline':
-            model = BaselineModel(dropout_rate=run_config.dropout).to(device)
+            model = BaselineModel(image_size=IMAGE_SIZE, dropout_rate=run_config.dropout).to(device)
         elif run_config.model == 'vit':
-            model = ViT(image_size=IMAGE_SIZE[0], num_classes=NUM_CLASSES, channels=1,
+            model = ViT(image_size=IMAGE_SIZE, num_classes=NUM_CLASSES, channels=1,
                         patch_size=run_config.patch_size,
                         dim=run_config.projection_dim,
                         depth=run_config.num_transformer_layers,
