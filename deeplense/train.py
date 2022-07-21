@@ -91,8 +91,8 @@ if __name__ == '__main__':
     parser.add_argument('--model', choices=['baseline', 'vit', 'vit_pretrained'], default='vit')
     parser.add_argument('--seed', type=int)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'tpu', 'best'], default='best')
-    parser.add_argument('--random_resize_scale', type=float, default=0.7)
-    parser.add_argument('--random_rotation', type=float, default=30)
+    parser.add_argument('--random_zoom', type=float, default=0.8)
+    parser.add_argument('--random_rotation', type=float, default=180)
 
     # Common hyperparameters
     parser.add_argument('--batchsize', type=int, default=128)
@@ -141,11 +141,11 @@ if __name__ == '__main__':
         train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
         augment_transforms = [transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()]
-        if run_config.random_resize_scale < 1: # 1 is when the random crop is the whole image
-            augment_transforms.append(transforms.RandomResizedCrop(150, scale=(run_config.random_resize_scale, 1)))
         if run_config.random_rotation > 0:
-            augment_transforms.append(transforms.RandomRotation(run_config.random_rotation))
-        padding_transform = [transforms.Pad(37)] if run_config.model == 'vit_pretrained' else None
+            augment_transforms.append(transforms.RandomRotation(run_config.random_rotation, interpolation=transforms.InterpolationMode.BILINEAR, fill=-1.))
+        if run_config.random_zoom < 1: # 1 is when the random crop is the whole image
+            augment_transforms.append(transforms.RandomResizedCrop(IMAGE_SIZE, scale=(run_config.random_zoom**2, 1.), ratio=(1., 1.)))
+        padding_transform = [transforms.Pad(37, fill=-1.)] if run_config.model == 'vit_pretrained' else None
         if padding_transform is not None:
             augment_transforms.extend(padding_transform) # 150x150 to 224x224 for ViT
             padding_transform = transforms.Compose(padding_transform)

@@ -16,16 +16,13 @@ class LensDataset(Dataset):
                            shape=(self.length, image_size, image_size))
         self.y = np.load(os.path.join(memmap_path, 'labels.npy'))
 
-        self.min = self.x.min()
-        self.range = self.x.max() - self.min
-
         self.transform = transform
     
     def __len__(self):
         return self.length
     
     def __getitem__(self, idx):
-        img = (self.x[idx] - self.min) / self.range # Standardize
+        img = (self.x[idx] - self.x[idx].mean()) / self.x[idx].std() # Normalize each image separately
         img = np.expand_dims(img, axis=0) # Add channel axis
         img = torch.from_numpy(img)
         if self.transform:
