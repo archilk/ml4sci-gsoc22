@@ -2,7 +2,7 @@ import torch
 from torch.nn import Sequential, Linear, PReLU, BatchNorm1d, Dropout, Identity
 import timm
 
-from ..constants import NUM_CLASSES
+from deeplense.constants import NUM_CLASSES
 
 class TimmModelSimple(torch.nn.Module):
     def __init__(self, name, *args, in_chans=1, num_classes=NUM_CLASSES, pretrained=True, tune=False, **kwargs):

@@ -1,6 +1,6 @@
 import torch
 from torch.nn import Conv2d, BatchNorm2d, MaxPool2d, Flatten, Linear, ReLU, Softmax, Dropout
-from ..constants import NUM_CLASSES
+from deeplense.constants import NUM_CLASSES
 
 class BaselineModel(torch.nn.Module):
     def __init__(self, image_size=150, dropout_rate=0.5, *args, **kwargs):
