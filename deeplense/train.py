@@ -108,7 +108,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_heads', type=int, default=16)
     parser.add_argument('--mlp_dim', type=int, default=2048)
     parser.add_argument('--transformer_dropout', type=float, default=0.1)
-    parser.add_argument('--tune', type=int, choices=[0, 1], default=1, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
+    parser.add_argument('--tune', type=int, choices=[0, 1], default=0, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
 
     run_config = parser.parse_args()
 
@@ -171,6 +171,11 @@ if __name__ == '__main__':
             model = ViTPretrainedClassifier(dropout_rate=run_config.dropout, tune=tune).to(device)
         else:
             model = None
+        
+        if device == 'cuda' and torch.cuda.device_count() > 1:
+            device = 'cuda:0'
+            model = torch.nn.DataParallel(model)
+            model = model.to(device)
 
         if run_config.optimizer == 'adam':
             optimizer = Adam(model.parameters(), lr=run_config.lr)
