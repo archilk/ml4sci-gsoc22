@@ -3,7 +3,6 @@ from torch.utils.data import DataLoader, random_split
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.nn import CrossEntropyLoss
-from vit_pytorch import ViT
 from tqdm import tqdm
 import numpy as np
 import argparse
