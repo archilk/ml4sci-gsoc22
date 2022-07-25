@@ -60,7 +60,7 @@ def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epoc
                 wandb.log(log_dict, step=batch_num)
                 wandb.log({
                     'roc': wandb.plot.roc_curve(val_metrics['ground_truth'],
-                                                torch.nn.functional.softmax(val_metrics['logits']),
+                                                torch.nn.functional.softmax(val_metrics['logits'], dim=-1),
                                                 labels=LABELS)
                 })
 

@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
         wandb.log({
             'test_roc': wandb.plot.roc_curve(metrics['ground_truth'],
-                                        torch.nn.functional.softmax(metrics['logits']),
+                                        torch.nn.functional.softmax(metrics['logits'], dim=-1),
                                         labels=LABELS)
         })
 
