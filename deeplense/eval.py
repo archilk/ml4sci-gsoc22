@@ -3,14 +3,13 @@ from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
 from vit_pytorch import ViT
-from torchvision import transforms
 import timm
 import wandb
 import numpy as np
 import argparse
 import os
 
-from data import LensDataset
+from data import LensDataset, get_transforms
 from constants import *
 from utils import get_best_device
 from networks import BaselineModel, ViTClassifier
@@ -68,8 +67,7 @@ if __name__ == '__main__':
             IMAGE_SIZE = None
 
         datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
-        padding_transform = transforms.Compose([transforms.Pad(37)]) if wandb.config.model == 'vit_pretrained' else None
-        dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath, transform=padding_transform)
+        dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath, transform=get_transforms(wandb.config, mode='test'))
         data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
         if wandb.config.model == 'baseline':

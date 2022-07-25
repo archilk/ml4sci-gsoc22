@@ -1,8 +1,8 @@
 import torch
 from torch.utils.data import Dataset
+from torchvision import transforms
 import numpy as np
 import os
-import math
 
 from constants import *
 
@@ -45,4 +45,18 @@ class WrapperDataset(Dataset):
         img, label = self.subset[idx]
         if self.transform:
             img = self.transform(img)
-        return img, label
+        return img, label 
+
+
+def get_transforms(config, final_size, mode='test'):
+    transform_pipeline = []
+    if mode == 'train':
+        transform_pipeline.extend([transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()])
+        if config.random_rotation > 0:
+            transform_pipeline.append(transforms.RandomRotation(config.random_rotation, interpolation=transforms.InterpolationMode.BILINEAR))
+        if config.random_zoom < 1: # 1 is when the random crop is the whole image
+            transform_pipeline.append(transforms.RandomResizedCrop(final_size, scale=(config.random_zoom**2, 1.), ratio=(1., 1.)))
+    
+    transform_pipeline.append(transforms.Resize(final_size))
+
+    return transforms.Compose(transform_pipeline)

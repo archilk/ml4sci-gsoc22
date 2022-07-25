@@ -3,19 +3,17 @@ from torch.utils.data import DataLoader, random_split
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.nn import CrossEntropyLoss
-from torchvision import transforms
 from vit_pytorch import ViT
 from tqdm import tqdm
 import numpy as np
 import argparse
 import os
 import wandb
-import timm
 
-from data import LensDataset, WrapperDataset
+from data import LensDataset, WrapperDataset, get_transforms
 from constants import *
-from utils import get_best_device, set_seed
-from networks import BaselineModel, ViTClassifier, ViTPretrainedClassifier
+from models import get_timm_model
+from utils import get_device, set_seed
 from eval import evaluate
 
 def train_step(model, images, labels, optimizer, scheduler, criterion, device='cpu'):
@@ -88,9 +86,17 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', choices=['Model_I', 'Model_II', 'Model_III', 'Model_IV'], default='Model_I', help='which data model')
     parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--log_interval', type=int, default=100)
-    parser.add_argument('--model', choices=['baseline', 'vit', 'vit_pretrained'], default='vit')
+    parser.add_argument('--model_source', choices=['baseline', 'timm'], default='timm')
+    # Timm Specific
+    parser.add_argument('--model_name', type=str, default='vit_base_patch16_224')
+    parser.add_argument('--complex', type=int, choice=[0, 1], default=1)
+    parser.add_argument('--pretrained', type=int, choices=[0, 1], default=1)
+    parser.add_argument('--tune', type=int, choices=[0, 1], default=0, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
+    ###
     parser.add_argument('--seed', type=int)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'tpu', 'best'], default='best')
+
+    # Augmentations
     parser.add_argument('--random_zoom', type=float, default=0.8)
     parser.add_argument('--random_rotation', type=float, default=180)
 
@@ -108,23 +114,18 @@ if __name__ == '__main__':
     parser.add_argument('--num_heads', type=int, default=16)
     parser.add_argument('--mlp_dim', type=int, default=2048)
     parser.add_argument('--transformer_dropout', type=float, default=0.1)
-    parser.add_argument('--tune', type=int, choices=[0, 1], default=0, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
 
     run_config = parser.parse_args()
 
-    tune = True if run_config.tune == 1 else False
+    tune = bool(run_config.tune)
+    pretrained = bool(run_config.pretrained)
+    complex = bool(run_config.complex)
 
     with wandb.init(entity='_archil', config=run_config, group=f'{run_config.dataset}', job_type='train'):
         if run_config.seed:
             set_seed(run_config.seed)
-
-        if run_config.device == 'best':
-            device = get_best_device()
-        elif run_config.device == 'tpu':
-            import torch_xla.core.xla_model as xm
-            device = xm.xla_device()
-        else:
-            device = run_config.device
+        
+        device = get_device(run_config.device)
         
         if run_config.dataset == 'Model_I':
             IMAGE_SIZE = 150
@@ -140,35 +141,17 @@ if __name__ == '__main__':
         val_size = len(train_dataset) - train_size
         train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
-        augment_transforms = [transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()]
-        if run_config.random_rotation > 0:
-            augment_transforms.append(transforms.RandomRotation(run_config.random_rotation, interpolation=transforms.InterpolationMode.BILINEAR, fill=-1.))
-        if run_config.random_zoom < 1: # 1 is when the random crop is the whole image
-            augment_transforms.append(transforms.RandomResizedCrop(IMAGE_SIZE, scale=(run_config.random_zoom**2, 1.), ratio=(1., 1.)))
-        padding_transform = [transforms.Pad(37, fill=-1.)] if run_config.model == 'vit_pretrained' else None
-        if padding_transform is not None:
-            augment_transforms.extend(padding_transform) # 150x150 to 224x224 for ViT
-            padding_transform = transforms.Compose(padding_transform)
-        augment_transforms = transforms.Compose(augment_transforms)
-
-        train_dataset = WrapperDataset(train_dataset, transform=augment_transforms)
-        val_dataset = WrapperDataset(val_dataset, transform=padding_transform)
+        train_dataset = WrapperDataset(train_dataset, transform=get_transforms(run_config, mode='train'))
+        val_dataset = WrapperDataset(val_dataset, transform=get_transforms(run_config, mode='test'))
 
         train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
 
-        if run_config.model == 'baseline':
+        if run_config.model_source == 'baseline':
             model = BaselineModel(image_size=IMAGE_SIZE, dropout_rate=run_config.dropout).to(device)
-        elif run_config.model == 'vit':
-            model = ViT(image_size=IMAGE_SIZE, num_classes=NUM_CLASSES, channels=1,
-                        patch_size=run_config.patch_size,
-                        dim=run_config.projection_dim,
-                        depth=run_config.num_transformer_layers,
-                        heads=run_config.num_heads,
-                        mlp_dim=run_config.mlp_dim,
-                        dropout=run_config.dropout, emb_dropout=run_config.transformer_dropout).to(device)
-        elif run_config.model == 'vit_pretrained':
-            model = ViTPretrainedClassifier(dropout_rate=run_config.dropout, tune=tune).to(device)
+        elif run_config.model_source == 'timm':
+            model = get_timm_model(run_config.model_name, complex=complex,
+                                    dropout_rate=run_config.dropout, pretrained=pretrained, tune=tune).to(device)
         else:
             model = None
         
