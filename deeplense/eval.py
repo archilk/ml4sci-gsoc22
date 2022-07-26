@@ -11,7 +11,7 @@ from models import get_timm_model
 from models.baseline import BaselineModel
 from data import LensDataset, get_transforms
 from constants import *
-from utils import get_best_device
+from utils import get_device
 
 @torch.no_grad()
 def evaluate(model, data_loader, loss_fn, device):
@@ -57,10 +57,7 @@ if __name__ == '__main__':
         pretrained = bool(wandb.config.pretrained)
         tune = bool(wandb.config.tune)
 
-        if run_config.device == 'best':
-            device = get_best_device()
-        else:
-            device = run_config.device
+        device = get_device(run_config.device)
         
         if wandb.config.dataset == 'Model_I':
             IMAGE_SIZE = 150
@@ -81,6 +78,11 @@ if __name__ == '__main__':
             model = None
         weights_file = wandb.restore('best_model.pt')
         model.load_state_dict(torch.load(os.path.join(wandb.run.dir, 'best_model.pt')))
+
+        if device == 'cuda' and torch.cuda.device_count() > 1:
+            device = 'cuda:0'
+            model = torch.nn.DataParallel(model)
+            model = model.to(device)
 
         criterion = CrossEntropyLoss()
 
