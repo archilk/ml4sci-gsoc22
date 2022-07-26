@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default='vit_base_patch16_224')
     parser.add_argument('--complex', type=int, choices=[0, 1], default=1)
     parser.add_argument('--pretrained', type=int, choices=[0, 1], default=1)
-    parser.add_argument('--tune', type=int, choices=[0, 1], default=0, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
+    parser.add_argument('--tune', type=int, choices=[0, 1], default=1, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
     ###
     parser.add_argument('--seed', type=int)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'tpu', 'best'], default='best')
@@ -134,22 +134,11 @@ if __name__ == '__main__':
         else:
             IMAGE_SIZE = None
 
-        datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'train')
-        train_dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath)
-        # 90%-10% Train-validation split
-        train_size = int(len(train_dataset) * 0.8)
-        val_size = len(train_dataset) - train_size
-        train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
-
-        train_dataset = WrapperDataset(train_dataset, transform=get_transforms(run_config, mode='train'))
-        val_dataset = WrapperDataset(val_dataset, transform=get_transforms(run_config, mode='test'))
-
-        train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
-
+        INPUT_SIZE = IMAGE_SIZE
         if run_config.model_source == 'baseline':
-            model = BaselineModel(image_size=IMAGE_SIZE, dropout_rate=run_config.dropout).to(device)
+            model = BaselineModel(image_size=INPUT_SIZE, dropout_rate=run_config.dropout).to(device)
         elif run_config.model_source == 'timm':
+            INPUT_SIZE = TIMM_IMAGE_SIZE[run_config.model_name]
             model = get_timm_model(run_config.model_name, complex=complex,
                                     dropout_rate=run_config.dropout, pretrained=pretrained, tune=tune).to(device)
         else:
@@ -159,6 +148,19 @@ if __name__ == '__main__':
             device = 'cuda:0'
             model = torch.nn.DataParallel(model)
             model = model.to(device)
+        
+        datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'train')
+        train_dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath)
+        # 90%-10% Train-validation split
+        train_size = int(len(train_dataset) * 0.8)
+        val_size = len(train_dataset) - train_size
+        train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
+
+        train_dataset = WrapperDataset(train_dataset, transform=get_transforms(run_config, final_size=INPUT_SIZE, mode='train'))
+        val_dataset = WrapperDataset(val_dataset, transform=get_transforms(run_config, final_size=INPUT_SIZE, mode='test'))
+
+        train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
 
         if run_config.optimizer == 'adam':
             optimizer = Adam(model.parameters(), lr=run_config.lr)

@@ -66,18 +66,20 @@ if __name__ == '__main__':
         else:
             IMAGE_SIZE = None
 
-        datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
-        dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath, transform=get_transforms(wandb.config, mode='test'))
-        data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
-
+        INPUT_SIZE = IMAGE_SIZE
         if wandb.config.model_source == 'baseline':
-            model = BaselineModel(image_size=IMAGE_SIZE).to(device)
+            model = BaselineModel(image_size=INPUT_SIZE).to(device)
         elif wandb.config.model_source == 'timm':
+            INPUT_SIZE = TIMM_IMAGE_SIZE[wandb.config.model_name]
             model = get_timm_model(wandb.config.model_name, complex=complex).to(device)
         else:
             model = None
         weights_file = wandb.restore('best_model.pt')
         model.load_state_dict(torch.load(os.path.join(wandb.run.dir, 'best_model.pt')))
+
+        datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
+        dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath, transform=get_transforms(wandb.config, final_size=INPUT_SIZE, mode='test'))
+        data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
         if device == 'cuda' and torch.cuda.device_count() > 1:
             device = 'cuda:0'
