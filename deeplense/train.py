@@ -89,7 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_source', choices=['baseline', 'timm'], default='timm')
     # Timm Specific
     parser.add_argument('--model_name', type=str, default='vit_base_patch16_224')
-    parser.add_argument('--complex', type=int, choice=[0, 1], default=1)
+    parser.add_argument('--complex', type=int, choices=[0, 1], default=1)
     parser.add_argument('--pretrained', type=int, choices=[0, 1], default=1)
     parser.add_argument('--tune', type=int, choices=[0, 1], default=0, help='Whether to further tune (1) pretrained model (if any) or freeze the pretrained weights (0)')
     ###
