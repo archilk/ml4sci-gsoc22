@@ -1,9 +1,8 @@
 import torch
 from torch.nn import Conv2d, BatchNorm2d, MaxPool2d, Flatten, Linear, ReLU, Softmax, Dropout
-from deeplense.constants import NUM_CLASSES
 
 class BaselineModel(torch.nn.Module):
-    def __init__(self, image_size=150, dropout_rate=0.5, *args, **kwargs):
+    def __init__(self, image_size=150, dropout_rate=0.5, num_classes=3, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.layer1 = Conv2d(1, 16, 5) # 1xsizexsize -> 16x(size-4)x(size-4)
@@ -39,7 +38,7 @@ class BaselineModel(torch.nn.Module):
         self.linear1 = Linear(128*repr_size*repr_size, 256)
         self.linear2 = Linear(256, 32)
 
-        self.classifier = Linear(32, NUM_CLASSES)
+        self.classifier = Linear(32, num_classes)
 
         self.pool = MaxPool2d(2)
         self.relu = ReLU()

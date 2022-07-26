@@ -2,10 +2,8 @@ import torch
 from torch.nn import Sequential, Linear, PReLU, BatchNorm1d, Dropout, Identity
 import timm
 
-from deeplense.constants import NUM_CLASSES
-
 class TimmModelSimple(torch.nn.Module):
-    def __init__(self, name, *args, in_chans=1, num_classes=NUM_CLASSES, pretrained=True, tune=False, **kwargs):
+    def __init__(self, name, *args, in_chans=1, num_classes=3, pretrained=True, tune=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.backbone = timm.create_model(name, pretrained=pretrained, in_chans=in_chans, num_classes=num_classes)
         for param in self.backbone.parameters():
