@@ -12,6 +12,7 @@ import wandb
 from data import LensDataset, WrapperDataset, get_transforms
 from constants import *
 from models import get_timm_model
+from models.baseline import BaselineModel
 from utils import get_device, set_seed
 from eval import evaluate
 

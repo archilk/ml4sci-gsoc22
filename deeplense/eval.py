@@ -2,17 +2,16 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
-from vit_pytorch import ViT
-import timm
 import wandb
 import numpy as np
 import argparse
 import os
 
+from models import get_timm_model
+from models.baseline import BaselineModel
 from data import LensDataset, get_transforms
 from constants import *
 from utils import get_best_device
-from networks import BaselineModel, ViTClassifier
 
 @torch.no_grad()
 def evaluate(model, data_loader, loss_fn, device):
@@ -54,6 +53,10 @@ if __name__ == '__main__':
     run_config = parser.parse_args()
 
     with wandb.init(entity='_archil', id=run_config.runid, resume='must'):
+        complex = bool(wandb.config.complex)
+        pretrained = bool(wandb.config.pretrained)
+        tune = bool(wandb.config.tune)
+
         if run_config.device == 'best':
             device = get_best_device()
         else:
@@ -70,18 +73,10 @@ if __name__ == '__main__':
         dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath, transform=get_transforms(wandb.config, mode='test'))
         data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
-        if wandb.config.model == 'baseline':
+        if wandb.config.model_source == 'baseline':
             model = BaselineModel(image_size=IMAGE_SIZE).to(device)
-        elif wandb.config.model == 'vit':
-            model = ViT(image_size=IMAGE_SIZE[0], num_classes=NUM_CLASSES, channels=1,
-                        patch_size=wandb.config.patch_size,
-                        dim=wandb.config.projection_dim,
-                        depth=wandb.config.num_transformer_layers,
-                        heads=wandb.config.num_heads,
-                        mlp_dim=wandb.config.mlp_dim,
-                        dropout=wandb.config.dropout, emb_dropout=wandb.config.transformer_dropout).to(device)
-        elif wandb.config.model == 'vit_pretrained':
-            model = timm.create_model('vit_base_patch16_224', pretrained=True, in_chans=1, num_classes=NUM_CLASSES).to(device)
+        elif wandb.config.model_source == 'timm':
+            model = get_timm_model(wandb.config.model_name, complex=complex).to(device)
         else:
             model = None
         weights_file = wandb.restore('best_model.pt')
