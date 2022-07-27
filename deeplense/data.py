@@ -7,7 +7,8 @@ import os
 from constants import *
 
 class LensDataset(Dataset):
-    def __init__(self, image_size, memmap_path, *args, transform=None, **kwargs):
+    def __init__(self, image_size, memmap_path, *args,
+                 transform=None, mean=None, std=None, **kwargs):
         super().__init__(*args, **kwargs)
         # Hack where shape of memmap is inferred by creating memmap object twice. TODO: Find cleaner way
         self.x = np.memmap(os.path.join(memmap_path, 'images.npy'), dtype='int32', mode='r')
@@ -16,13 +17,21 @@ class LensDataset(Dataset):
                            shape=(self.length, image_size, image_size))
         self.y = np.load(os.path.join(memmap_path, 'labels.npy'))
 
+        self.mean = mean
+        if self.mean is None:
+            self.mean = np.mean(self.x)
+        
+        self.std = std
+        if self.std is None:
+            self.std = np.std(self.x)
+
         self.transform = transform
     
     def __len__(self):
         return self.length
     
     def __getitem__(self, idx):
-        img = (self.x[idx] - self.x[idx].mean()) / self.x[idx].std() # Normalize each image separately
+        img = (self.x[idx] - self.mean) / self.std
         img = np.expand_dims(img, axis=0) # Add channel axis
         img = torch.from_numpy(img)
         if self.transform:

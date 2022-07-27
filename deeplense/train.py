@@ -151,6 +151,8 @@ if __name__ == '__main__':
         
         datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'train')
         train_dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath)
+        wandb.run.summary['norm_mean'] = train_dataset.mean
+        wandb.run.summary['norm_std'] = train_dataset.std
         # 90%-10% Train-validation split
         train_size = int(len(train_dataset) * 0.8)
         val_size = len(train_dataset) - train_size
