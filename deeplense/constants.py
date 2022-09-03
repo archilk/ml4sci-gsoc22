@@ -5,4 +5,5 @@ LABEL_MAP = {'axion': 0, 'cdm': 1, 'no_sub': 2}
 TIMM_IMAGE_SIZE = {
     'vit_base_patch16_224': 224,
     'convit_small': 224,
+    'vit_small_r26_s32_224': 224,
 }
