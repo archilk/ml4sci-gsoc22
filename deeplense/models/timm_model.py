@@ -16,10 +16,6 @@ class TimmModelSimple(torch.nn.Module):
     def get_representation_features(self):
         return self.backbone.get_classifier().in_features
     
-    def set_classifier(self, classifier):
-        self.backbone.reset_classifier(0)
-        self.classifier = classifier
-    
     def forward(self, img):
         return self.backbone(img)
 
