@@ -145,9 +145,7 @@ if __name__ == '__main__':
             model = None
         
         if device == 'cuda' and torch.cuda.device_count() > 1:
-            device = 'cuda:0'
-            model = torch.nn.DataParallel(model)
-            model = model.to(device)
+            model = torch.nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
         
         datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'train')
         train_dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath)
