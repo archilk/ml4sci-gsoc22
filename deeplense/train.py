@@ -121,7 +121,14 @@ if __name__ == '__main__':
     pretrained = bool(run_config.pretrained)
     complex = bool(run_config.complex)
 
-    with wandb.init(entity='_archil', config=run_config, group=f'{run_config.dataset}', job_type='train'):
+    # Group for wandb
+    group = 'baseline'
+    if run_config.model_source == 'timm':
+        group = f'timm-{run_config.model_name}'
+        if complex:
+            group = f'{group}-complex'
+
+    with wandb.init(entity='_archil', config=run_config, group=group, job_type=f'{run_config.dataset}'):
         if run_config.seed:
             set_seed(run_config.seed)
         
