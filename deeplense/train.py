@@ -97,8 +97,8 @@ if __name__ == '__main__':
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'tpu', 'best'], default='best')
 
     # Augmentations
-    parser.add_argument('--random_zoom', type=float, default=0.8)
-    parser.add_argument('--random_rotation', type=float, default=180)
+    parser.add_argument('--random_zoom', type=float, default=0.9)
+    parser.add_argument('--random_rotation', type=float, default=90)
 
     # Common hyperparameters
     parser.add_argument('--batchsize', type=int, default=128)
