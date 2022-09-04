@@ -6,4 +6,5 @@ TIMM_IMAGE_SIZE = {
     'vit_base_patch16_224': 224,
     'convit_small': 224,
     'vit_small_r26_s32_224': 224,
+    'vit_base_r26_s32_224': 224,
 }
