@@ -117,8 +117,8 @@ if __name__ == '__main__':
 
     run_config = parser.parse_args()
 
-    tune = bool(run_config.tune)
     pretrained = bool(run_config.pretrained)
+    tune = bool(run_config.tune) or not pretrained
     complex = bool(run_config.complex)
 
     # Group for wandb
