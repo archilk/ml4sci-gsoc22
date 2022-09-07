@@ -107,14 +107,6 @@ if __name__ == '__main__':
     parser.add_argument('--optimizer', choices=['sgd', 'adam'], default='adam')
     parser.add_argument('--decay_lr', type=int, default=0)
 
-    # ViT hyperparameters
-    parser.add_argument('--patch_size', type=int, default=30)
-    parser.add_argument('--projection_dim', type=int, default=1024)
-    parser.add_argument('--num_transformer_layers', type=int, default=8)
-    parser.add_argument('--num_heads', type=int, default=16)
-    parser.add_argument('--mlp_dim', type=int, default=2048)
-    parser.add_argument('--transformer_dropout', type=float, default=0.1)
-
     run_config = parser.parse_args()
 
     pretrained = bool(run_config.pretrained)
