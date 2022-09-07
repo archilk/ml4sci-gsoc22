@@ -75,6 +75,48 @@ python3 eval.py \
 
 # __Results__
 
+So far, a baseline CNN model and 3 variants of vision transformers (along with 2 subvariants in 2 of them) have been tested. Results are as follows:
+
+### __[ConViT (Tiny version)](https://arxiv.org/abs/2103.10697)__
+
+  | Dataset | AUC (axion) | AUC (cdm) | AUC (no_sub) 
+  | :---:  | :---: | :---: | :---: | 
+  | Model I   |  0.9522  | 0.9216 | 0.9909 |
+  | Model II  | 0.9445  | 0.8475 | 0.9617 |
+  | Model III |  0.9910  | 0.9668 | 0.9856 |
+  
+### __[ConViT (Small version)](https://arxiv.org/abs/2103.10697)__
+
+  | Dataset | AUC (axion) | AUC (cdm) | AUC (no_sub) 
+  | :---:  | :---: | :---: | :---: | 
+  | Model I   |  0.9633  | 0.9221 | 0.9892 |
+  | Model II  | 0.9407  | 0.7223 | 0.9452 |
+  | Model III |  0.9901  | 0.9582 | 0.9876 |
+
+### __ViT-ResNet Hybrid (Tiny version)__
+
+  | Dataset | AUC (axion) | AUC (cdm) | AUC (no_sub) 
+  | :---:  | :---: | :---: | :---: | 
+  | Model I   |  0.9447  | 0.8863 | 0.9881 |
+  | Model II  | 0.9410  | 0.8391 | 0.9500 |
+  | Model III |  0.9888  | 0.9695 | 0.9912 |
+
+### __ViT-ResNet Hybrid (Small version)__
+
+  | Dataset | AUC (axion) | AUC (cdm) | AUC (no_sub) 
+  | :---:  | :---: | :---: | :---: | 
+  | Model I   |  0.9781  | 0.9680 | 0.9978 |
+  | Model II  | 0.9553  | 0.8714 | 0.9633 |
+  | Model III |  0.9991  | 0.9908 | 0.9952 |
+
+### __[Bottleneck Transformers](https://arxiv.org/abs/2101.11605)__
+
+  | Dataset | AUC (axion) | AUC (cdm) | AUC (no_sub) 
+  | :---:  | :---: | :---: | :---: | 
+  | Model I   |  0.9911  | 0.9845 | 0.9995 |
+  | Model II  | 0.9607  | 0.9043 | 0.9772 |
+  | Model III |  0.9992  | 0.9927 | 0.9976 |
+
 <br>
 
 ## __Citation__
