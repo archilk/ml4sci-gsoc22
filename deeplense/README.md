@@ -77,6 +77,14 @@ python3 eval.py \
 
 So far, a baseline CNN model and 3 variants of vision transformers (along with 2 subvariants in 2 of them) have been tested. Results are as follows:
 
+### __[Simple CNN Baseline__
+
+  | Dataset | AUC (axion) | AUC (cdm) | AUC (no_sub) 
+  | :---:  | :---: | :---: | :---: | 
+  | Model I   |  0.9923  | 0.9856 | 0.9971 |
+  | Model II  | 0.9988  | 0.9978 | 0.9997 |
+  | Model III |  1.0000  | 1.0000 | 1.0000 |
+
 ### __[ConViT (Tiny version)](https://arxiv.org/abs/2103.10697)__
 
   | Dataset | AUC (axion) | AUC (cdm) | AUC (no_sub) 
