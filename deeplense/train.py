@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, random_split
-from torch.optim import Adam, SGD
+from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.nn import CrossEntropyLoss
 from tqdm import tqdm
@@ -166,17 +166,11 @@ if __name__ == '__main__':
         train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)
 
-        if run_config.optimizer == 'adam':
-            optimizer = Adam(model.parameters(), lr=run_config.lr)
-        else:
-            optimizer = SGD(model.parameters(), lr=run_config.lr)
+        optimizer = AdamW(model.parameters(), lr=run_config.lr, weight_decay=0.01)
         
         criterion = CrossEntropyLoss()
 
-        if run_config.decay_lr == 1:
-            scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=1, eta_min=1e-6, verbose=True)
-        else:
-            scheduler = None
+        scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=1, eta_min=1e-6, verbose=True)
 
         best_val_metrics = train(model, train_loader, val_loader, criterion, optimizer, scheduler, run_config.epochs,
                                  device, run_config.log_interval)

@@ -31,7 +31,9 @@ class LensDataset(Dataset):
         return self.length
     
     def __getitem__(self, idx):
-        img = (self.x[idx] - self.mean) / self.std
+        img = self.x[idx]
+        img = (img - np.min(img)) / (np.max(img) - np.min(img))
+        #img = (self.x[idx] - self.mean) / self.std
         img = np.expand_dims(img, axis=0) # Add channel axis
         img = torch.from_numpy(img)
         if self.transform:
