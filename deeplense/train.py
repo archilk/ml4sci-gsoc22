@@ -120,6 +120,8 @@ if __name__ == '__main__':
         group = f'timm-{run_config.model_name}'
         if complex:
             group = f'{group}-complex'
+    elif run_config.model_source == 'transformer_zoo':
+        group = f'scratch-{run_config.model_name}'
 
     with wandb.init(entity='_archil', config=run_config, group=group, job_type=f'{run_config.dataset}'):
         if run_config.seed:
