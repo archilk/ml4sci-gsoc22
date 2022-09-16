@@ -13,6 +13,7 @@ from data import LensDataset, WrapperDataset, get_transforms
 from constants import *
 from models import get_timm_model
 from models.baseline import BaselineModel
+from models.transformers import get_transformer_model
 from utils import get_device, set_seed
 from eval import evaluate
 
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', choices=['Model_I', 'Model_II', 'Model_III', 'Model_IV'], default='Model_I', help='which data model')
     parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--log_interval', type=int, default=100)
-    parser.add_argument('--model_source', choices=['baseline', 'timm'], default='timm')
+    parser.add_argument('--model_source', choices=['baseline', 'timm', 'transformer_zoo'], default='transformer_zoo')
     # Timm Specific
     parser.add_argument('--model_name', type=str, default='vit_base_patch16_224')
     parser.add_argument('--complex', type=int, choices=[0, 1], default=1)
@@ -140,6 +141,8 @@ if __name__ == '__main__':
             INPUT_SIZE = TIMM_IMAGE_SIZE[run_config.model_name]
             model = get_timm_model(run_config.model_name, complex=complex,
                                     dropout_rate=run_config.dropout, pretrained=pretrained, tune=tune).to(device)
+        elif run_config.model_source == 'transformer_zoo':
+            model = get_transformer_model(run_config.model_name)
         else:
             model = None
         
