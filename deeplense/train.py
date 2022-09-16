@@ -144,7 +144,7 @@ if __name__ == '__main__':
             model = get_timm_model(run_config.model_name, complex=complex,
                                     dropout_rate=run_config.dropout, pretrained=pretrained, tune=tune).to(device)
         elif run_config.model_source == 'transformer_zoo':
-            model = get_transformer_model(run_config.model_name, dropout=run_config.dropout)
+            model = get_transformer_model(run_config.model_name, dropout=run_config.dropout).to(device)
         else:
             model = None
         
