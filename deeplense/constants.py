@@ -10,4 +10,6 @@ TIMM_IMAGE_SIZE = {
     'vit_base_r26_s32_224': 224,
     'vit_tiny_r_s16_p8_224': 224,
     'botnet26t_256': 256,
+    'crossvit_small_240': 240,
+    'crossvit_9_dagger_240': 240
 }
