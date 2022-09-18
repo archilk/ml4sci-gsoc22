@@ -8,6 +8,7 @@ import argparse
 import os
 
 from models import get_timm_model
+from models.transformers import get_transformer_model
 from models.baseline import BaselineModel
 from data import LensDataset, get_transforms
 from constants import *
@@ -72,6 +73,8 @@ if __name__ == '__main__':
         elif wandb.config.model_source == 'timm':
             INPUT_SIZE = TIMM_IMAGE_SIZE[wandb.config.model_name]
             model = get_timm_model(wandb.config.model_name, complex=complex).to(device)
+        elif wandb.config.model_source == 'transformer_zoo':
+            model = get_transformer_model(run_config.model_name, dropout=run_config.dropout).to(device)
         else:
             model = None
         weights_file = wandb.restore('best_model.pt')
