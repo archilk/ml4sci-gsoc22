@@ -74,7 +74,7 @@ if __name__ == '__main__':
             INPUT_SIZE = TIMM_IMAGE_SIZE[wandb.config.model_name]
             model = get_timm_model(wandb.config.model_name, complex=complex).to(device)
         elif wandb.config.model_source == 'transformer_zoo':
-            model = get_transformer_model(run_config.model_name, dropout=run_config.dropout).to(device)
+            model = get_transformer_model(wandb.config.model_name, dropout=wandb.config.dropout).to(device)
         else:
             model = None
         weights_file = wandb.restore('best_model.pt')
