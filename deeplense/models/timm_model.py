@@ -8,7 +8,7 @@ class TimmModelSimple(torch.nn.Module):
         self.backbone = timm.create_model(name, pretrained=pretrained, in_chans=in_chans, num_classes=num_classes)
         for param in self.backbone.parameters():
             param.requires_grad = tune
-        for param in ModuleList(self.backbone.get_classifier()).parameters():
+        for param in self.backbone.get_classifier().parameters():
             param.requires_grad = True
         
         self.num_classes = num_classes
