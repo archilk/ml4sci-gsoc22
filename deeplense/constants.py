@@ -27,5 +27,6 @@ TIMM_IMAGE_SIZE = {
     'coatnet_1_rw_224': 224,
     'coatnet_0_rw_224': 224,
     'coatnet_bn_0_rw_224': 224,
-    'coatnet_nano_rw_224': 224
+    'coatnet_nano_rw_224': 224,
+    'coat_lite_small': 224
 }
