@@ -26,4 +26,6 @@ TIMM_IMAGE_SIZE = {
     'swin_tiny_patch4_window7_224': 224,
     'coatnet_1_rw_224': 224,
     'coatnet_0_rw_224': 224,
+    'coatnet_bn_0_rw_224': 224,
+    'coatnet_nano_rw_224': 224
 }
