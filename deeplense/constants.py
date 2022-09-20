@@ -18,4 +18,5 @@ TIMM_IMAGE_SIZE = {
     'levit_256': 256,
     'twins_svt_base': 224,
     'twins_svt_small': 224,
+    'swinv2_small_window16_256': 256,
 }
