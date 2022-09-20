@@ -19,4 +19,7 @@ TIMM_IMAGE_SIZE = {
     'twins_svt_base': 224,
     'twins_svt_small': 224,
     'swinv2_small_window16_256': 256,
+    'swinv2_small_window8_256': 256,
+    'swinv2_tiny_window16_256': 256,
+    'swinv2_tiny_window8_256': 256
 }
