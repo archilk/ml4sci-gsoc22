@@ -62,7 +62,7 @@ class WrapperDataset(Dataset):
 def get_transforms(config, initial_size, final_size, mode='test'):
     transform_pipeline = []
     if mode == 'train':
-        #transform_pipeline.extend([transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()])
+        transform_pipeline.extend([transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()])
         if config.random_rotation > 0:
             transform_pipeline.append(transforms.RandomRotation(config.random_rotation, interpolation=transforms.InterpolationMode.BILINEAR))
         if config.random_zoom < 1: # 1 is when the random crop is the whole image
@@ -70,7 +70,7 @@ def get_transforms(config, initial_size, final_size, mode='test'):
     
     if final_size > initial_size:
         transform_pipeline.append(transforms.Resize(final_size))
-    else:
+    elif final_size < initial_size:
         transform_pipeline.append(transforms.CenterCrop(final_size))
 
     return transforms.Compose(transform_pipeline)
