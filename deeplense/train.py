@@ -98,8 +98,8 @@ if __name__ == '__main__':
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'tpu', 'best'], default='best')
 
     # Augmentations
-    parser.add_argument('--random_zoom', type=float, default=0.9)
-    parser.add_argument('--random_rotation', type=float, default=90)
+    parser.add_argument('--random_zoom', type=float, default=1)
+    parser.add_argument('--random_rotation', type=float, default=0)
 
     # Common hyperparameters
     parser.add_argument('--batchsize', type=int, default=128)
@@ -171,7 +171,7 @@ if __name__ == '__main__':
         
         criterion = CrossEntropyLoss()
 
-        scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=5, T_mult=1, eta_min=1e-6, verbose=True)
+        scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=15, T_mult=1, eta_min=1e-6, verbose=True)
 
         best_val_metrics = train(model, train_loader, val_loader, criterion, optimizer, scheduler, run_config.epochs,
                                  device, run_config.log_interval)

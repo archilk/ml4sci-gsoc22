@@ -34,14 +34,17 @@ class TimmModelComplex(TimmModelSimple):
                             Linear(in_features, 1024),
                             PReLU(),
                             BatchNorm1d(1024),
+                            Dropout(0.5),
                             
                             Linear(1024, 512),
                             BatchNorm1d(512),
                             PReLU(),
+                            Dropout(0.5),
     
                             Linear(512, 128),
                             PReLU(),
                             BatchNorm1d(128),
+                            Dropout(0.3),
                             
                             Linear(128, self.num_classes)
                             )
