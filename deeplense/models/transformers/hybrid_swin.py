@@ -383,6 +383,7 @@ class BasicLayer(nn.Module):
 
     def forward(self, x):
         for blk in self.blocks:
+            import pdb;pdb.set_trace()
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
