@@ -71,6 +71,6 @@ def get_transforms(config, initial_size, final_size, mode='test'):
     if final_size > initial_size:
         transform_pipeline.append(transforms.Resize(final_size))
     else:
-        transform_pipeline.append(transforms.CenterCrop(height=final_size, width=final_size, p=1.0))
+        transform_pipeline.append(transforms.CenterCrop(final_size))
 
     return transforms.Compose(transform_pipeline)
