@@ -476,7 +476,7 @@ class effnet_embedding(nn.Module):
 
         
         self.final = nn.Sequential(
-            nn.Conv2d(96, embed_dim, kernel_size=(1, 1), stride=(1, 1), bias=False),
+            nn.Conv2d(384, embed_dim, kernel_size=(1, 1), stride=(1, 1), bias=False),
             nn.BatchNorm2d(embed_dim, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.SiLU(inplace=True)
         )
