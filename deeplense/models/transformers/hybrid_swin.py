@@ -383,7 +383,6 @@ class BasicLayer(nn.Module):
 
     def forward(self, x):
         for blk in self.blocks:
-            import pdb;pdb.set_trace()
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x)
             else:
@@ -457,7 +456,7 @@ class effnet_embedding(nn.Module):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_patches = 1024   #Highly specific do not change
-        self.patches_resolution = [32, 32]
+        self.patches_resolution = [4, 4]
         if norm_layer is not None:
             self.norm = norm_layer(embed_dim)
         else:
