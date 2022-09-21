@@ -161,8 +161,8 @@ if __name__ == '__main__':
         val_size = len(train_dataset) - train_size
         train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 
-        train_dataset = WrapperDataset(train_dataset, transform=get_transforms(run_config, final_size=INPUT_SIZE, mode='train'))
-        val_dataset = WrapperDataset(val_dataset, transform=get_transforms(run_config, final_size=INPUT_SIZE, mode='test'))
+        train_dataset = WrapperDataset(train_dataset, transform=get_transforms(run_config, initial_size=IMAGE_SIZE, final_size=INPUT_SIZE, mode='train'))
+        val_dataset = WrapperDataset(val_dataset, transform=get_transforms(run_config, initial_size=IMAGE_SIZE, final_size=INPUT_SIZE, mode='test'))
 
         train_loader = DataLoader(train_dataset, batch_size=run_config.batchsize, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=run_config.batchsize, shuffle=False)

@@ -83,7 +83,7 @@ if __name__ == '__main__':
         datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
         dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath,
                               mean=wandb.run.summary['norm_mean'], std=wandb.run.summary['norm_std'],
-                              transform=get_transforms(wandb.config, final_size=INPUT_SIZE, mode='test'))
+                              transform=get_transforms(wandb.config, initial_size=IMAGE_SIZE, final_size=INPUT_SIZE, mode='test'))
         data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
         if device == 'cuda' and torch.cuda.device_count() > 1:

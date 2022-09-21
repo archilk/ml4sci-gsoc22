@@ -31,4 +31,5 @@ TIMM_IMAGE_SIZE = {
     'coat_lite_small': 224,
     'efficientformer_l3': 224,
     'efficientformer_l7': 224,
+    'efficientnet_b1': 50
 }
