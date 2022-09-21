@@ -463,7 +463,7 @@ class effnet_embedding(nn.Module):
             self.norm = None
         self.base = timm.create_model("efficientnet_b3",drop_rate=0.2, drop_path_rate=0.2)
         
-        self.block_top = nn.Sequential(nn.Conv2d(3,
+        self.block_top = nn.Sequential(nn.Conv2d(1,
                                                  40,
                                                  kernel_size=(3, 3),
                                                  padding=(1, 1),
@@ -526,6 +526,7 @@ class SwinTransformer(nn.Module):
         super().__init__()
 
         self.num_classes = num_classes
+        self.in_chans = in_chans
         self.num_layers = len(depths)
         self.embed_dim = embed_dim
         self.ape = ape
@@ -621,9 +622,10 @@ class SwinTransformer(nn.Module):
         flops += self.num_features * self.num_classes
         return flops
     
-def Hybrid():
-    model = SwinTransformer(img_size = 256,
-                             num_classes = 1,
+def Hybrid(image_size=224, num_classes=3):
+    model = SwinTransformer(img_size = image_size,
+                             num_classes = num_classes,
+                             in_chans=1,
                              patch_size=4,
                              window_size=4,
                              embed_dim=96, 
