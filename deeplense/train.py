@@ -140,10 +140,7 @@ if __name__ == '__main__':
         if run_config.model_source == 'baseline':
             model = BaselineModel(image_size=INPUT_SIZE, dropout_rate=run_config.dropout).to(device)
         elif run_config.model_source == 'timm':
-            if run_config.model_name.startswith('efficientnet'):
-                INPUT_SIZE = IMAGE_SIZE
-            else:
-                INPUT_SIZE = TIMM_IMAGE_SIZE[run_config.model_name]
+            INPUT_SIZE = TIMM_IMAGE_SIZE[run_config.model_name]
             model = get_timm_model(run_config.model_name, complex=complex,
                                     dropout_rate=run_config.dropout, pretrained=pretrained, tune=tune).to(device)
         elif run_config.model_source == 'transformer_zoo':
