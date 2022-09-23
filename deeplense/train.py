@@ -157,7 +157,7 @@ if __name__ == '__main__':
         wandb.run.summary['norm_mean'] = train_dataset.mean
         wandb.run.summary['norm_std'] = train_dataset.std
         # 90%-10% Train-validation split
-        train_size = int(len(train_dataset) * 0.8)
+        train_size = int(len(train_dataset) * 0.9)
         val_size = len(train_dataset) - train_size
         train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
 

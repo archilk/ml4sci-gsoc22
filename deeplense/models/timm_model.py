@@ -1,5 +1,5 @@
 import torch
-from torch.nn import Sequential, ModuleList, Linear, PReLU, BatchNorm1d, Dropout, Identity
+from torch.nn import Sequential, ModuleList, Linear, PReLU, BatchNorm1d, Dropout, Identity, LazyLinear, Flatten
 import timm
 
 class TimmModelSimple(torch.nn.Module):
@@ -28,10 +28,11 @@ class TimmModelSimple(torch.nn.Module):
 class TimmModelComplex(TimmModelSimple):
     def __init__(self, *args, dropout_rate=0.3, **kwargs):
         super().__init__(*args, **kwargs)
-        in_features = self.backbone.get_classifier().in_features
-        self.backbone.reset_classifier(0)
+        # in_features = self.backbone.get_classifier().in_features
+        # self.backbone.reset_classifier(0)
         self.classifier = Sequential(
-                            Linear(in_features, 1024),
+                            Flatten(),
+                            LazyLinear(1024),
                             PReLU(),
                             BatchNorm1d(1024),
                             Dropout(0.5),
