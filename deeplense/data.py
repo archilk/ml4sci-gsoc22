@@ -61,16 +61,18 @@ class WrapperDataset(Dataset):
 
 def get_transforms(config, initial_size, final_size, mode='test'):
     transform_pipeline = []
-    if mode == 'train':
-        transform_pipeline.extend([transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()])
-        if config.random_rotation > 0:
-            transform_pipeline.append(transforms.RandomRotation(config.random_rotation, interpolation=transforms.InterpolationMode.BILINEAR))
-        if config.random_zoom < 1: # 1 is when the random crop is the whole image
-            transform_pipeline.append(transforms.RandomResizedCrop(final_size, scale=(config.random_zoom**2, 1.), ratio=(1., 1.)))
+    # if mode == 'train':
+    #     transform_pipeline.extend([transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()])
+    #     if config.random_rotation > 0:
+    #         transform_pipeline.append(transforms.RandomRotation(config.random_rotation, interpolation=transforms.InterpolationMode.BILINEAR))
+    #     if config.random_zoom < 1: # 1 is when the random crop is the whole image
+    #         transform_pipeline.append(transforms.RandomResizedCrop(final_size, scale=(config.random_zoom**2, 1.), ratio=(1., 1.)))
     
-    if final_size > initial_size:
-        transform_pipeline.append(transforms.Resize(final_size))
-    elif final_size < initial_size:
-        transform_pipeline.append(transforms.CenterCrop(final_size))
+    if initial_size == 150: # Model I
+        transform_pipeline.append(transforms.CenterCrop(100))
+    else: # Model II and Model III
+        transform_pipeline.append(transforms.CenterCrop(50))
+    
+    transform_pipeline.append(transforms.Resize(final_size))
 
     return transforms.Compose(transform_pipeline)
