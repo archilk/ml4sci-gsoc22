@@ -31,6 +31,7 @@ def train_step(model, images, labels, optimizer, scheduler, criterion, device='c
 
 
 def train(model, train_loader, val_loader, criterion, optimizer, scheduler, epochs, device, log_interval=100):
+    _ = model(next(iter(train_loader))) # Used to initialize parameters in lazy layers
     wandb.watch(model, criterion, log='all', log_freq=log_interval)
     best_val_auroc, best_val_metrics = 0., dict()
     batch_num = 0
