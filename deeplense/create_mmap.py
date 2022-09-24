@@ -24,7 +24,7 @@ if __name__ == '__main__':
         train_size += len(raw_image_files)
     
     image_map = np.memmap(os.path.join(opt.out_dir, opt.mode, 'images.npy'),
-                          dtype='int32', mode='w+',
+                          dtype='float32', mode='w+',
                           shape=(train_size, opt.image_size, opt.image_size))
     labels = np.zeros(train_size, dtype='int32')
 
