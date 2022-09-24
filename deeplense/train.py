@@ -124,7 +124,8 @@ if __name__ == '__main__':
     elif run_config.model_source == 'transformer_zoo':
         group = f'scratch-{run_config.model_name}'
 
-    with wandb.init(entity='_archil', config=run_config, group=group, job_type=f'{run_config.dataset}'):
+    with wandb.init(entity='_archil', project='ml4sci_deeplense_final',
+                    config=run_config, group=group, job_type=f'{run_config.dataset}'):
         if run_config.seed:
             set_seed(run_config.seed)
         
