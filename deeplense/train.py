@@ -153,8 +153,7 @@ if __name__ == '__main__':
         if device == 'cuda' and torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
         
-        datapath = os.path.join('./data', f'{run_config.dataset}', 'memmap', 'train')
-        train_dataset = LensDataset(image_size=IMAGE_SIZE, memmap_path=datapath)
+        train_dataset = LensDataset(root_dir=os.path.join('./data', f'{run_config.dataset}', 'train'))
         wandb.run.summary['norm_mean'] = train_dataset.mean
         wandb.run.summary['norm_std'] = train_dataset.std
         # 90%-10% Train-validation split
