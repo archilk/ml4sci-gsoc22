@@ -50,7 +50,7 @@ class WrapperDataset(Dataset):
 
 
 def get_transforms(config, initial_size, final_size, mode='test'):
-    transform_pipeline = []
+    transform_pipeline = [transforms.ToTensor()]
     # if mode == 'train':
     #     transform_pipeline.extend([transforms.RandomHorizontalFlip(), transforms.RandomVerticalFlip()])
     #     if config.random_rotation > 0:
