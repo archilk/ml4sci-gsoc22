@@ -19,7 +19,7 @@ class LensDataset(Dataset):
         self.transform = transform
     
     def __len__(self):
-        return self.length
+        return len(self.image_paths)
     
     def __getitem__(self, idx):
         image_path, category = self.image_paths[idx], self.categories[idx]
