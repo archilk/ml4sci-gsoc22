@@ -154,8 +154,6 @@ if __name__ == '__main__':
             model = torch.nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
         
         train_dataset = LensDataset(root_dir=os.path.join('./data', f'{run_config.dataset}', 'train'))
-        wandb.run.summary['norm_mean'] = train_dataset.mean
-        wandb.run.summary['norm_std'] = train_dataset.std
         # 90%-10% Train-validation split
         train_size = int(len(train_dataset) * 0.9)
         val_size = len(train_dataset) - train_size
