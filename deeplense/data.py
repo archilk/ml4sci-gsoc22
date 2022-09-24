@@ -63,6 +63,7 @@ def get_transforms(config, initial_size, final_size, mode='test'):
     else: # Model II and Model III
         transform_pipeline.append(transforms.CenterCrop(50))
     
-    transform_pipeline.append(transforms.Resize(final_size))
+    if initial_size != final_size:
+        transform_pipeline.append(transforms.Resize(final_size))
 
     return transforms.Compose(transform_pipeline)
