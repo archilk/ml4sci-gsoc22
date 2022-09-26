@@ -3,7 +3,7 @@ from torch.nn import Sequential, ModuleList, Linear, PReLU, BatchNorm1d, Dropout
 import timm
 
 class TimmModelSimple(torch.nn.Module):
-    def __init__(self, name, *args, in_chans=1, num_classes=3, pretrained=True, tune=False, **kwargs):
+    def __init__(self, name, *args, in_chans=1, num_classes=3, pretrained=True, tune=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.backbone = timm.create_model(name, pretrained=pretrained, in_chans=in_chans, num_classes=num_classes)
         for param in self.backbone.parameters():
