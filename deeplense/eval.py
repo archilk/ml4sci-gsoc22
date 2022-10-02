@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
     run_config = parser.parse_args()
 
-    with wandb.init(entity='_archil', id=run_config.runid, resume='must'):
+    with wandb.init(entity='_archil', project='ml4sci_deeplense_final', id=run_config.runid, resume='must'):
         complex = bool(wandb.config.complex)
         pretrained = bool(wandb.config.pretrained)
         tune = bool(wandb.config.tune)
