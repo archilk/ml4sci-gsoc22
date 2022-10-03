@@ -111,7 +111,7 @@ if __name__ == '__main__':
                                         labels=LABELS)
         })
 
-        fig, axes = plt.plot(nrows=1, ncols=2, figsize=(10, 5))
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
 
         fpr = dict()
         tpr = dict()
@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
         disp = ConfusionMatrixDisplay.from_predictions(y_true=metrics['ground_truth'].numpy(),
                                                        y_pred=np.argmax(metrics['logits'], axis=-1),
-                                                       display_labels=range(len(LABELS)),
+                                                       display_labels=LABELS,
                                                        cmap=plt.cm.Blues, colorbar=False, ax=axes[1])
 
         # wandb.log({
@@ -134,8 +134,8 @@ if __name__ == '__main__':
         #                                             class_names=LABELS)
         # })
 
-        fig.save_fig(f'{wandb.config.model_name}__plots.jpg')
+        fig.savefig(f'{wandb.config.model_name}__plots.jpg')
 
-        wandb.log({'confusion_matrix': disp.confusion_matrix})
+        wandb.log({'confusion_matrix': fig})
 
 
