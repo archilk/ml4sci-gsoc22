@@ -2,8 +2,10 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
+from sklearn.metrics import ConfusionMatrixDisplay
 import wandb
 import numpy as np
+import matplotlib.pyplot as plt
 import argparse
 import os
 
@@ -107,10 +109,17 @@ if __name__ == '__main__':
                                         labels=LABELS)
         })
 
-        wandb.log({
-            "conf_mat" : wandb.plot.confusion_matrix(probs=torch.nn.functional.softmax(metrics['logits'], dim=-1).numpy(),
-                                                    y_true=metrics['ground_truth'].numpy(),
-                                                    class_names=LABELS)
-        })
+        disp = ConfusionMatrixDisplay.from_predictions(y_true=metrics['ground_truth'].numpy(),
+                                                       y_pred=np.argmax(metrics['logits'], axis=-1),
+                                                       labels=LABELS,
+                                                       cmap=plt.cm.Blues,colorbar=False)
+
+        # wandb.log({
+        #     "conf_mat" : wandb.plot.confusion_matrix(probs=torch.nn.functional.softmax(metrics['logits'], dim=-1).numpy(),
+        #                                             y_true=metrics['ground_truth'].numpy(),
+        #                                             class_names=LABELS)
+        # })
+
+        wandb.log({'confusion_matrix': disp.confusion_matrix})
 
 
