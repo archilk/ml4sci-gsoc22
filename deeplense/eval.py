@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
 from torchmetrics.functional import auroc as auroc_fn, accuracy as accuracy_fn
-from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.metrics import ConfusionMatrixDisplay, roc_curve
 import wandb
 import numpy as np
 import matplotlib.pyplot as plt
@@ -102,6 +102,8 @@ if __name__ == '__main__':
         wandb.run.summary['test_macro_auroc'] = metrics['macro_auroc']
         for label in LABELS:
             wandb.run.summary[f'test_{label}_auroc'] = metrics[f'{label}_auroc']
+        
+        
 
         wandb.log({
             'test_roc': wandb.plot.roc_curve(metrics['ground_truth'],
@@ -109,16 +111,30 @@ if __name__ == '__main__':
                                         labels=LABELS)
         })
 
+        fig, axes = plt.plot(nrows=1, ncols=2, figsize=(10, 5))
+
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+        for idx, cls in enumerate(LABELS):
+            class_truth = (metrics['ground_truth'].numpy() == idx).astype(int)
+            class_pred = torch.nn.functional.softmax(metrics['logits']).numpy()[..., idx]
+            fpr[idx], tpr[idx], _ = roc_curve(class_truth, class_pred)
+            _ = axes[0].plot(fpr[idx], tpr[idx], label=cls)
+        _ = axes[0].legend()
+
         disp = ConfusionMatrixDisplay.from_predictions(y_true=metrics['ground_truth'].numpy(),
                                                        y_pred=np.argmax(metrics['logits'], axis=-1),
                                                        display_labels=range(len(LABELS)),
-                                                       cmap=plt.cm.Blues,colorbar=False)
+                                                       cmap=plt.cm.Blues, colorbar=False, ax=axes[1])
 
         # wandb.log({
         #     "conf_mat" : wandb.plot.confusion_matrix(probs=torch.nn.functional.softmax(metrics['logits'], dim=-1).numpy(),
         #                                             y_true=metrics['ground_truth'].numpy(),
         #                                             class_names=LABELS)
         # })
+
+        fig.save_fig(f'{wandb.config.model_name}__plots.jpg')
 
         wandb.log({'confusion_matrix': disp.confusion_matrix})
 
