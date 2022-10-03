@@ -108,8 +108,8 @@ if __name__ == '__main__':
         })
 
         wandb.log({
-            "conf_mat" : wandb.plot.confusion_matrix(probs=torch.nn.functional.softmax(metrics['logits'], dim=-1),
-                                                    y_true=metrics['ground_truth'],
+            "conf_mat" : wandb.plot.confusion_matrix(probs=torch.nn.functional.softmax(metrics['logits'], dim=-1).numpy(),
+                                                    y_true=metrics['ground_truth'].numpy(),
                                                     class_names=LABELS)
         })
 
