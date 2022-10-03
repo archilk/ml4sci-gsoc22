@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
         disp = ConfusionMatrixDisplay.from_predictions(y_true=metrics['ground_truth'].numpy(),
                                                        y_pred=np.argmax(metrics['logits'], axis=-1),
-                                                       labels=LABELS,
+                                                       display_labels=range(len(LABELS)),
                                                        cmap=plt.cm.Blues,colorbar=False)
 
         # wandb.log({
