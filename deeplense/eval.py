@@ -76,7 +76,6 @@ if __name__ == '__main__':
         weights_file = wandb.restore('best_model.pt')
         model.load_state_dict(torch.load(os.path.join(wandb.run.dir, 'best_model.pt')))
 
-        datapath = os.path.join('./data', wandb.config.dataset, 'memmap', 'test')
         dataset = LensDataset(root_dir=os.path.join('./data', wandb.config.dataset, 'test'),
                               transform=get_transforms(wandb.config, initial_size=IMAGE_SIZE, final_size=INPUT_SIZE, mode='test'))
         data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
