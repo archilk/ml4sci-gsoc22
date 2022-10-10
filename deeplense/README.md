@@ -77,7 +77,7 @@ python3 eval.py \
 
 # __Results__
 
-So far, around 9 model families (including EfficientNet as baseline and 8 transformer families). Different variants of models from the same families were tested and the results are as follows:
+So far, around 9 model families (including EfficientNet as baseline and 8 transformer families). Different variants of models from the same families were tested and the results are shown below. For any further analysis, the run data can be found on my Weights & Biases [project](https://wandb.ai/_archil/ml4sci_deeplense_final).
 
 ## __[EfficientNet](https://arxiv.org/abs/1905.11946)__
 
