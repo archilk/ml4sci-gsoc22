@@ -11,7 +11,6 @@ import os
 
 from models import get_timm_model
 from models.transformers import get_transformer_model
-from models.baseline import BaselineModel
 from data import LensDataset, get_transforms
 from constants import *
 from utils import get_device
@@ -30,7 +29,6 @@ def evaluate(model, data_loader, loss_fn, device):
     loss.append(loss_fn(logits, y))
     accuracy.append(accuracy_fn(logits, y, num_classes=NUM_CLASSES))
     class_auroc.append(auroc_fn(logits, y, num_classes=NUM_CLASSES, average=None))
-    #micro_auroc.append(auroc_fn(logits, y, num_classes=NUM_CLASSES, average='micro'))
     macro_auroc.append(auroc_fn(logits, y, num_classes=NUM_CLASSES, average='macro'))
 
     result = {
@@ -53,13 +51,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--runid', type=str, help='ID of train run')
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda', 'best'], default='best')
+    parser.add_argument('--project', type=str, default='ml4sci_deeplense_final')
     run_config = parser.parse_args()
 
-    with wandb.init(entity='_archil', project='ml4sci_deeplense_final', id=run_config.runid, resume='must'):
+    with wandb.init(entity='_archil', project=run_config.project, id=run_config.runid, resume='must'):
         complex = bool(wandb.config.complex)
         pretrained = bool(wandb.config.pretrained)
         tune = bool(wandb.config.tune)
 
+        # Get best device on machine
         device = get_device(run_config.device)
         
         if wandb.config.dataset == 'Model_I':
@@ -69,16 +69,10 @@ if __name__ == '__main__':
         else:
             IMAGE_SIZE = None
 
-        INPUT_SIZE = IMAGE_SIZE
-        if wandb.config.model_source == 'baseline':
-            model = BaselineModel(image_size=INPUT_SIZE).to(device)
-        elif wandb.config.model_source == 'timm':
-            INPUT_SIZE = TIMM_IMAGE_SIZE[wandb.config.model_name]
-            model = get_timm_model(wandb.config.model_name, complex=complex).to(device)
-        elif wandb.config.model_source == 'transformer_zoo':
-            model = get_transformer_model(wandb.config.model_name, dropout=wandb.config.dropout).to(device)
-        else:
-            model = None
+        INPUT_SIZE = TIMM_IMAGE_SIZE[wandb.config.model_name]
+        model = get_timm_model(wandb.config.model_name, complex=complex).to(device)
+
+        # Fetch weights from wandb train run
         weights_file = wandb.restore('best_model.pt')
         model.load_state_dict(torch.load(os.path.join(wandb.run.dir, 'best_model.pt')))
 
@@ -87,6 +81,7 @@ if __name__ == '__main__':
                               transform=get_transforms(wandb.config, initial_size=IMAGE_SIZE, final_size=INPUT_SIZE, mode='test'))
         data_loader = DataLoader(dataset, batch_size=wandb.config.batchsize, shuffle=False)
 
+        # Parallelization across multiple GPUs, if available
         if device == 'cuda' and torch.cuda.device_count() > 1:
             device = 'cuda:0'
             model = torch.nn.DataParallel(model)
@@ -127,12 +122,6 @@ if __name__ == '__main__':
                                                        y_pred=np.argmax(metrics['logits'], axis=-1),
                                                        display_labels=LABELS,
                                                        cmap=plt.cm.Blues, colorbar=False, ax=axes[1])
-
-        # wandb.log({
-        #     "conf_mat" : wandb.plot.confusion_matrix(probs=torch.nn.functional.softmax(metrics['logits'], dim=-1).numpy(),
-        #                                             y_true=metrics['ground_truth'].numpy(),
-        #                                             class_names=LABELS)
-        # })
 
         fig.savefig(f'{wandb.config.model_name}__plots.jpg')
 
