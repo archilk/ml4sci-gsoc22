@@ -120,11 +120,12 @@ if __name__ == '__main__':
 
         disp = ConfusionMatrixDisplay.from_predictions(y_true=metrics['ground_truth'].numpy(),
                                                        y_pred=np.argmax(metrics['logits'], axis=-1),
-                                                       display_labels=LABELS,
+                                                       display_labels=['{} ({:.2f}%)'.format(label, metrics[f'{label}_auroc'] * 100)
+                                                                        for label in LABELS],
                                                        cmap=plt.cm.Blues, colorbar=False, ax=axes[1])
+        _ = axes[1].set_title('Test AUROC: {:.2f}%'.format(metrics['micro_auroc']))
 
         fig.savefig(f'{wandb.config.model_name}__plots.jpg')
 
         wandb.log({'confusion_matrix': fig})
-
 
