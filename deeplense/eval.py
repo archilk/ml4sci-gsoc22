@@ -116,7 +116,7 @@ if __name__ == '__main__':
             class_pred = torch.nn.functional.softmax(metrics['logits']).numpy()[..., idx]
             fpr[idx], tpr[idx], _ = roc_curve(class_truth, class_pred)
             _ = axes[0].plot(fpr[idx], tpr[idx], label='{} ({:.2f}%)'.format(cls, metrics[f'{cls}_auroc'] * 100))
-        _ = axes[0].set_title('Test AUROC: {:.2f}%'.format(metrics['macro_auroc']))
+        _ = axes[0].set_title('Test AUROC: {:.2f}%'.format(metrics['macro_auroc'] * 100))
         _ = axes[0].legend()
 
         disp = ConfusionMatrixDisplay.from_predictions(y_true=metrics['ground_truth'].numpy(),
