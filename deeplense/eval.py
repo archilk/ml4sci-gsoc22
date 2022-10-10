@@ -115,7 +115,8 @@ if __name__ == '__main__':
             class_truth = (metrics['ground_truth'].numpy() == idx).astype(int)
             class_pred = torch.nn.functional.softmax(metrics['logits']).numpy()[..., idx]
             fpr[idx], tpr[idx], _ = roc_curve(class_truth, class_pred)
-            _ = axes[0].plot(fpr[idx], tpr[idx], label=cls)
+            _ = axes[0].plot(fpr[idx], tpr[idx], label='{} ({:.2f}%)'.format(cls, metrics[f'{cls}_auroc'] * 100))
+        _ = axes[0].set_title('Test AUROC: {:.2f}%'.format(metrics['macro_auroc']))
         _ = axes[0].legend()
 
         disp = ConfusionMatrixDisplay.from_predictions(y_true=metrics['ground_truth'].numpy(),
@@ -123,7 +124,8 @@ if __name__ == '__main__':
                                                        display_labels=['{} ({:.2f}%)'.format(label, metrics[f'{label}_auroc'] * 100)
                                                                         for label in LABELS],
                                                        cmap=plt.cm.Blues, colorbar=False, ax=axes[1])
-        _ = axes[1].set_title('Test AUROC: {:.2f}%'.format(metrics['micro_auroc']))
+        
+        fig.tight_layout()
 
         fig.savefig(f'{wandb.config.model_name}__plots.jpg')
 
