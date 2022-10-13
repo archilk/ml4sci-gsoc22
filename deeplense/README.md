@@ -161,6 +161,7 @@ So far, around 9 model families (including EfficientNet as baseline and 8 transf
 ![Alt text](https://github.com/archilk/ml4sci-gsoc22/blob/main/deeplense/results/Model_I/coatnet_nano_rw_224.png?raw=true)
 
 ### Model II
+![Alt text](https://github.com/archilk/ml4sci-gsoc22/blob/main/deeplense/results/Model_II/coatnet_nano_rw_224.png?raw=true)
 
 ### Model III
 ![Alt text](https://github.com/archilk/ml4sci-gsoc22/blob/main/deeplense/results/Model_III/coatnet_nano_rw_224.png?raw=true)
